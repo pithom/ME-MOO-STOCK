@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "axios": "^1.14.0",
     "date-fns": "^4.1.0",
@@ -20,7 +23,8 @@
     "react-hot-toast": "^2.6.0",
     "react-is": "^19.2.4",
     "react-router-dom": "^7.13.2",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "serve": "^14.2.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
