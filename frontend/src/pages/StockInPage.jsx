@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { stockAPI, productsAPI } from '../services/api';
 import { format } from 'date-fns';
+import { getQueueSummary } from '../services/offlineSync';
 
 export default function StockInPage() {
   const [records, setRecords] = useState([]);
@@ -10,6 +11,7 @@ export default function StockInPage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ productId: '', quantity: '', note: '', date: '' });
+  const [queuedCount, setQueuedCount] = useState(0);
 
   const fetchAll = async () => {
     try {
@@ -21,16 +23,26 @@ export default function StockInPage() {
   };
 
   useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    getQueueSummary().then((s) => setQueuedCount(s.queued)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await stockAPI.addStock(form);
-      toast.success('Stock added successfully!');
+      const selected = products.find((p) => p._id === form.productId);
+      await stockAPI.addStock({
+        ...form,
+        expectedProductUpdatedAt: selected?.updatedAt,
+        expectedProductQuantity: selected?.quantity,
+      });
+      if (navigator.onLine) toast.success('Stock added successfully!');
       setShowModal(false);
       setForm({ productId: '', quantity: '', note: '', date: '' });
       fetchAll();
+      const summary = await getQueueSummary();
+      setQueuedCount(summary.queued);
     } catch (err) { toast.error(err.response?.data?.message || 'Error adding stock'); }
     finally { setSaving(false); }
   };
@@ -40,6 +52,7 @@ export default function StockInPage() {
       <div className="page-header">
         <h1 className="page-title">📥 Stock In</h1>
         <p className="page-subtitle">Record incoming stock deliveries</p>
+        {queuedCount > 0 && <p className="page-subtitle" style={{ color: 'var(--warning)' }}>{queuedCount} change(s) queued for sync</p>}
       </div>
 
       <div className="topbar">

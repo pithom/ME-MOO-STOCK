@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { salesAPI, productsAPI } from '../services/api';
+import { getQueueSummary } from '../services/offlineSync';
 
 const EMPTY_FORM = {
   productId: '',
@@ -17,11 +18,14 @@ export default function SalesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   useEffect(() => {
     productsAPI.getAll()
       .then(r => setProducts(r.data.filter(p => p.quantity > 0)))
       .catch(() => toast.error('Failed to load products'));
+
+    getQueueSummary().then((s) => setPendingSyncCount(s.queued)).catch(() => {});
   }, []);
 
   const handleProductChange = (e) => {
@@ -55,13 +59,21 @@ export default function SalesPage() {
     }
     setSaving(true);
     try {
-      await salesAPI.create(form);
-      toast.success('Sale recorded successfully! 🎉');
+      await salesAPI.create({
+        ...form,
+        expectedProductUpdatedAt: selectedProduct?.updatedAt,
+        expectedProductQuantity: selectedProduct?.quantity,
+      });
+      if (navigator.onLine) toast.success('Sale recorded successfully! 🎉');
       setForm(EMPTY_FORM);
       setSelectedProduct(null);
       // Refresh products
-      const r = await productsAPI.getAll();
-      setProducts(r.data.filter(p => p.quantity > 0));
+      if (navigator.onLine) {
+        const r = await productsAPI.getAll();
+        setProducts(r.data.filter(p => p.quantity > 0));
+      }
+      const summary = await getQueueSummary();
+      setPendingSyncCount(summary.queued);
     } catch (err) { toast.error(err.response?.data?.message || 'Error creating sale'); }
     finally { setSaving(false); }
   };
@@ -71,6 +83,11 @@ export default function SalesPage() {
       <div className="page-header">
         <h1 className="page-title">🛒 New Sale</h1>
         <p className="page-subtitle">Create a new sale transaction</p>
+        {pendingSyncCount > 0 && (
+          <p className="page-subtitle" style={{ color: 'var(--warning)' }}>
+            {pendingSyncCount} offline sale(s) waiting for sync
+          </p>
+        )}
       </div>
 
       <div style={{ maxWidth: 760 }}>

@@ -10,6 +10,8 @@ A full-stack stock management application with real-time inventory tracking, sal
 - **Dashboard**: Real-time summary of key metrics
 - **Reports**: Daily reports and pending payment analysis
 - **Authentication**: JWT-based secure authentication
+- **PWA + Offline Queue**: Works offline and syncs sales when internet returns
+- **Cross-platform**: Web + Capacitor (Android/iOS) + Electron desktop wrapper
 
 ## 🛠️ Tech Stack
 - **Backend**: Node.js, Express.js, MongoDB (Mongoose), JWT
@@ -211,3 +213,6 @@ ISC
 
 ## 👨‍💻 Support
 For issues, check logs in Render dashboard or run locally with `npm run dev`
+
+## 📱 Multi-platform Build Guide
+See `MULTIPLATFORM_SETUP.md` for Android, iOS, desktop, and PWA setup.

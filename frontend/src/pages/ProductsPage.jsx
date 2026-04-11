@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { productsAPI } from '../services/api';
+import QRCode from 'qrcode';
 
-const EMPTY_FORM = { name: '', category: '', price: '', quantity: '', description: '' };
+const EMPTY_FORM = { name: '', category: '', price: '', quantity: '', description: '', barcode: '', qrCode: '' };
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -26,14 +27,43 @@ export default function ProductsPage() {
   useEffect(() => { fetchProducts(); }, []);
 
   const openAdd = () => { setForm(EMPTY_FORM); setEditId(null); setShowModal(true); };
-  const openEdit = (p) => { setForm({ name: p.name, category: p.category, price: p.price, quantity: p.quantity, description: p.description || '' }); setEditId(p._id); setShowModal(true); };
+  const openEdit = (p) => {
+    setForm({
+      name: p.name,
+      category: p.category,
+      price: p.price,
+      quantity: p.quantity,
+      description: p.description || '',
+      barcode: p.barcode || '',
+      qrCode: p.qrCode || '',
+    });
+    setEditId(p._id);
+    setShowModal(true);
+  };
+
+  const generateQrFromFields = async () => {
+    if (!form.name.trim()) {
+      toast.error('Enter product name before generating QR');
+      return;
+    }
+    const qrPayload = JSON.stringify({
+      name: form.name,
+      category: form.category,
+      barcode: form.barcode,
+      price: form.price,
+    });
+    const dataUrl = await QRCode.toDataURL(qrPayload);
+    setForm(prev => ({ ...prev, qrCode: dataUrl }));
+    toast.success('QR generated');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
       if (editId) {
-        await productsAPI.update(editId, form);
+        const current = products.find((p) => p._id === editId);
+        await productsAPI.update(editId, { ...form, expectedUpdatedAt: current?.updatedAt });
         toast.success('Product updated!');
       } else {
         await productsAPI.create(form);
@@ -49,7 +79,8 @@ export default function ProductsPage() {
     if (!window.confirm('Delete this product?')) return;
     setDeleting(id);
     try {
-      await productsAPI.delete(id);
+      const current = products.find((p) => p._id === id);
+      await productsAPI.delete(id, { expectedUpdatedAt: current?.updatedAt });
       toast.success('Product deleted');
       fetchProducts();
     } catch { toast.error('Failed to delete'); }
@@ -96,6 +127,7 @@ export default function ProductsPage() {
                   <th>Price (RWF)</th>
                   <th>Quantity</th>
                   <th>Stock Status</th>
+                  <th>Barcode</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -112,6 +144,7 @@ export default function ProductsPage() {
                         {(Number(p.quantity) || 0) <= lowStockThreshold ? '🟡 Low Stock' : '🟢 In Stock'}
                       </span>
                     </td>
+                    <td style={{ color: 'var(--text-muted)' }}>{p.barcode || '—'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>
@@ -158,6 +191,21 @@ export default function ProductsPage() {
                 <label className="form-label">Description (optional)</label>
                 <input className="form-control" placeholder="Short description..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">Barcode (optional)</label>
+                  <input className="form-control" placeholder="e.g. 123456789012" value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">QR Code</label>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={generateQrFromFields}>Generate QR</button>
+                </div>
+              </div>
+              {form.qrCode && (
+                <div className="form-group">
+                  <img src={form.qrCode} alt="Product QR" style={{ width: 96, height: 96, borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                </div>
+              )}
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>

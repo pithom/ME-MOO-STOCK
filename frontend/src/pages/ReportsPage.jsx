@@ -4,6 +4,7 @@ import { reportsAPI } from '../services/api';
 import { format } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export default function ReportsPage() {
   const [tab, setTab] = useState('daily');
@@ -96,6 +97,44 @@ export default function ReportsPage() {
     doc.save(`pending-payments-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
 
+  const downloadDailyExcel = () => {
+    if (!dailyData) return;
+    const rows = (dailyData.sales || []).map((s, i) => ({
+      No: i + 1,
+      Product: s.product?.name || '-',
+      Quantity: s.quantity,
+      'Unit Price': s.unitPrice,
+      'Total Price': s.totalPrice,
+      Payment: s.paymentStatus,
+      Method: s.paymentType || 'Cash',
+      Customer: s.customerName || '-',
+      Phone: s.customerPhone || '-',
+      Date: format(new Date(s.date), 'yyyy-MM-dd HH:mm'),
+    }));
+
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, 'Daily Sales');
+    XLSX.writeFile(wb, `daily-report-${date}.xlsx`);
+  };
+
+  const downloadPendingExcel = () => {
+    if (!pendingData) return;
+    const rows = (pendingData.pending || []).map((s, i) => ({
+      No: i + 1,
+      Customer: s.customerName || '-',
+      Phone: s.customerPhone || '-',
+      Product: s.product?.name || '-',
+      Quantity: s.quantity,
+      'Amount Owed': s.amountOwed,
+      Date: format(new Date(s.date), 'yyyy-MM-dd'),
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, 'Pending Payments');
+    XLSX.writeFile(wb, `pending-payments-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
   return (
     <div>
       <div className="page-header">
@@ -116,6 +155,7 @@ export default function ReportsPage() {
             <input type="date" className="form-control" style={{ width: 200 }} value={date} onChange={e => setDate(e.target.value)} />
             <button className="btn btn-primary" onClick={fetchDaily}>🔍 Load Report</button>
             <button className="btn btn-success" onClick={downloadDailyPdf} disabled={!dailyData}>⬇️ Download PDF</button>
+            <button className="btn btn-ghost" onClick={downloadDailyExcel} disabled={!dailyData}>📊 Download Excel</button>
           </div>
 
           {loading ? (
@@ -187,6 +227,7 @@ export default function ReportsPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
             <button className="btn btn-success" onClick={downloadPendingPdf} disabled={!pendingData}>⬇️ Download PDF</button>
+            <button className="btn btn-ghost" onClick={downloadPendingExcel} disabled={!pendingData}>📊 Download Excel</button>
           </div>
           {loading ? (
             <div className="page-loader"><div className="spinner" style={{ width: 36, height: 36 }}></div></div>

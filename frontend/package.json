@@ -7,16 +7,29 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:init": "npx cap init memoo-stock com.memoo.stock --web-dir=dist",
+    "mobile:add:android": "npx cap add android",
+    "mobile:add:ios": "npx cap add ios",
+    "mobile:sync": "npx cap sync",
+    "mobile:build:android": "npm run build && npx cap sync android",
+    "mobile:build:ios": "npm run build && npx cap sync ios",
+    "mobile:android": "npx cap open android",
+    "mobile:ios": "npx cap open ios"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3",
     "axios": "^1.14.0",
     "date-fns": "^4.1.0",
-    "jspdf": "^4.2.1",
+    "idb": "^8.0.3",
     "jspdf-autotable": "^5.0.7",
+    "jspdf": "^4.2.1",
+    "qrcode": "^1.5.4",
     "lucide-react": "^1.7.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -24,9 +37,11 @@
     "react-is": "^19.2.4",
     "react-router-dom": "^7.13.2",
     "recharts": "^3.8.1",
-    "serve": "^14.2.3"
+    "serve": "^14.2.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
     "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

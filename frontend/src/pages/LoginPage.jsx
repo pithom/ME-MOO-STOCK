@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import authBackgroundImage from '../assets/Memoo Stock login and regester background.png';
+import logoImage from '../assets/MEMOO STOCK logo .png';
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -17,36 +19,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-logo">
-          <div className="logo-circle">🏪</div>
+    <div
+      className="auth-page auth-modern-page"
+      style={{ backgroundImage: `linear-gradient(rgba(15,23,42,0.72), rgba(15,23,42,0.72)), url("${authBackgroundImage}")` }}
+    >
+      <div className="auth-modern-card">
+        <div className="auth-modern-header">
+          <img src={logoImage} alt="ME-MOO STOCK Logo" className="auth-modern-logo" />
           <h1>Welcome Back</h1>
-          <p>Sign in to StockPro Manager</p>
+          <p>Sign in to continue</p>
         </div>
-        <div className="card">
+        <div className="auth-modern-body">
           {error && <div className="alert alert-error">⚠️ {error}</div>}
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <input className="form-control" type="email" placeholder="admin@example.com"
-                value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input className="form-control" type="password" placeholder="••••••••"
+            <input className="auth-modern-input" type="email" placeholder="Email address"
+              value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+            <div className="auth-modern-password-row">
+              <input className="auth-modern-input" type="password" placeholder="Password"
                 value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+              <Link to="/forgot-password" className="auth-modern-link">Forgot password?</Link>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} disabled={loading}>
-              {loading ? <><span className="spinner"></span> Signing in...</> : '🔐 Sign In'}
+            <button type="submit" className="auth-modern-btn" disabled={loading}>
+              {loading ? <><span className="spinner"></span> Logging in...</> : 'Login'}
             </button>
           </form>
-          <div style={{ marginTop: 12, textAlign: 'center' }}>
-            <Link to="/forgot-password" style={{ color: 'var(--primary-light)', fontSize: 13 }}>
-              Forgot password?
-            </Link>
+          <div className="auth-modern-footer">
+            Don&apos;t have a shop account? <Link to="/register">Sign Up</Link>
           </div>
-          <div className="auth-divider">Admin access only</div>
         </div>
       </div>
     </div>

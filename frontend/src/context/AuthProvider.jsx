@@ -23,6 +23,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (shopName, email, password) => {
+    setLoading(true);
+    try {
+      const { data } = await authAPI.register({
+        name: shopName,
+        email,
+        password,
+        role: 'admin',
+      });
+      // Keep current session intact; new shop can login explicitly.
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || 'Shop registration failed' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('stockUser');
     setUser(null);
@@ -49,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,8 +3,11 @@ import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/useAuth';
+import { ThemeProvider } from './context/ThemeProvider';
+import { useTheme } from './context/useTheme';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProductsPage from './pages/ProductsPage';
 import StockInPage from './pages/StockInPage';
@@ -18,6 +21,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const ProtectedLayout = ({ children }) => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'admin') return <Navigate to="/login" replace />;
@@ -27,6 +31,9 @@ const ProtectedLayout = ({ children }) => {
       <header className="mobile-header">
         <button className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(true)}>☰ Menu</button>
         <div className="mobile-title">StockPro</div>
+        <button className="btn btn-ghost btn-sm" onClick={toggleTheme}>
+          {theme === 'dark' ? '🌙' : '☀️'}
+        </button>
       </header>
       <main className="main-content">{children}</main>
     </div>
@@ -43,6 +50,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
       <Route path="/reset-password/:token" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedLayout><DashboardPage /></ProtectedLayout>} />
@@ -58,20 +66,36 @@ function AppRoutes() {
   );
 }
 
+function AppShell() {
+  const { theme } = useTheme();
+
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: theme === 'dark' ? '#1e1e35' : '#ffffff',
+            color: theme === 'dark' ? '#e2e8f0' : '#0f172a',
+            border: `1px solid ${theme === 'dark' ? 'rgba(99,102,241,0.3)' : 'rgba(15,23,42,0.12)'}`,
+            borderRadius: 10,
+            fontSize: 14,
+          },
+          success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+          error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
+    </BrowserRouter>
+  );
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: { background: '#1e1e35', color: '#e2e8f0', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 10, fontSize: 14 },
-            success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-            error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-          }}
-        />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -1,0 +1,38 @@
+{
+  "name": "memoo-stock-desktop",
+  "version": "1.0.0",
+  "description": "ME-MOO STOCK desktop app",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist:win": "electron-builder --win nsis",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.memoo.stock.desktop",
+    "productName": "ME-MOO STOCK",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "../frontend/dist/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

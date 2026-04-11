@@ -8,6 +8,7 @@ export default function SalesListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState(null);
+  const [returning, setReturning] = useState(null);
 
   const fetchSales = async () => {
     try {
@@ -33,12 +34,34 @@ export default function SalesListPage() {
     }
   };
 
+  const handleReturn = async (sale) => {
+    if (sale.isReturned) return;
+    const method = window.prompt('Return method (Refund Cash / Exchange / Store Credit / Other):', 'Refund Cash');
+    if (!method) return;
+    const note = window.prompt('Return note (optional):', '') || '';
+
+    setReturning(sale._id);
+    try {
+      await salesAPI.returnSale(sale._id, { returnMethod: method, returnNote: note });
+      toast.success('Product return recorded and stock restored');
+      setSales((prev) => prev.map((row) => (
+        row._id === sale._id
+          ? { ...row, isReturned: true, returnMethod: method, returnNote: note, returnedAt: new Date().toISOString() }
+          : row
+      )));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to record return');
+    } finally {
+      setReturning(null);
+    }
+  };
+
   const filtered = sales.filter(s =>
     s.product?.name?.toLowerCase().includes(search.toLowerCase()) ||
     s.customerName?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid').reduce((sum, s) => sum + s.totalPrice, 0);
+  const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid' && !s.isReturned).reduce((sum, s) => sum + s.totalPrice, 0);
   const totalPending = sales.filter(s => s.paymentStatus === 'Pending').reduce((sum, s) => sum + s.amountOwed, 0);
 
   return (
@@ -101,6 +124,7 @@ export default function SalesListPage() {
                   <th>Method</th>
                   <th>Customer</th>
                   <th>Phone</th>
+                  <th>Return</th>
                   <th>Date</th>
                   <th>Actions</th>
                 </tr>
@@ -122,15 +146,32 @@ export default function SalesListPage() {
                     <td style={{ color: 'var(--text-muted)' }}>{s.paymentType || 'Cash'}</td>
                     <td style={{ color: 'var(--text-muted)' }}>{s.customerName || '—'}</td>
                     <td style={{ color: 'var(--text-muted)' }}>{s.customerPhone || '—'}</td>
+                    <td>
+                      {s.isReturned ? (
+                        <span className="badge badge-low">↩ {s.returnMethod || 'Returned'}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      )}
+                    </td>
                     <td style={{ color: 'var(--text-muted)' }}>{format(new Date(s.date), 'dd MMM yyyy')}</td>
                     <td>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDelete(s._id)}
-                        disabled={deleting === s._id}
-                      >
-                        {deleting === s._id ? '...' : '🗑️ Delete'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => handleReturn(s)}
+                          disabled={returning === s._id || s.isReturned}
+                          title={s.isReturned ? 'Already returned' : 'Return product and restore stock'}
+                        >
+                          {returning === s._id ? '...' : s.isReturned ? '↩ Returned' : '↩ Return'}
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDelete(s._id)}
+                          disabled={deleting === s._id}
+                        >
+                          {deleting === s._id ? '...' : '🗑️ Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

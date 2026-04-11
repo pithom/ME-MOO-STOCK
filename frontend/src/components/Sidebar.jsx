@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { useTheme } from '../context/useTheme';
 
 const navItems = [
   { to: '/', icon: '📊', label: 'Dashboard', section: 'MAIN' },
@@ -14,6 +15,7 @@ const navItems = [
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const sections = [...new Set(navItems.map(i => i.section))];
@@ -51,6 +53,14 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         ))}
         <div>
           <div className="nav-section">ACCOUNT</div>
+          <button
+            className="nav-item"
+            onClick={toggleTheme}
+            style={{ width: '100%', background: 'transparent' }}
+          >
+            <span className="nav-icon">{theme === 'dark' ? '🌙' : '☀️'}</span>
+            {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+          </button>
           <button
             className="nav-item"
             onClick={handleLogout}

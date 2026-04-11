@@ -81,6 +81,22 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         )}
       </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>⚠️ Low Stock Alerts</h2>
+        {data?.lowStockProducts?.length ? (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {data.lowStockProducts.map((p) => (
+              <div key={p._id} className="alert alert-error" style={{ marginBottom: 0 }}>
+                <span>{p.name}</span>
+                <strong style={{ marginLeft: 'auto' }}>{p.quantity} left</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: 'var(--text-muted)' }}>All products are above low-stock threshold.</p>
+        )}
+      </div>
     </div>
   );
 }

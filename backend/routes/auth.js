@@ -10,7 +10,37 @@ const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expires
 
 // @POST /api/auth/register
 router.post('/register', async (req, res) => {
-  return res.status(403).json({ message: 'Registration is disabled. Contact admin.' });
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Shop name, email and password are required' });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: 'Shop email is already registered' });
+    }
+
+    const user = await User.create({
+      name: String(name).trim(),
+      email: String(email).trim().toLowerCase(),
+      password,
+      role: 'admin',
+    });
+
+    return res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 });
 
 // @POST /api/auth/login
