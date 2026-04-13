@@ -3,10 +3,10 @@ const router = express.Router();
 const Product = require('../models/Product');
 const Sale = require('../models/Sale');
 const StockIn = require('../models/StockIn');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 // GET dashboard summary
-router.get('/', protect, adminOnly, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const ownerFilter = { owner: req.user._id };
     const totalProducts = await Product.countDocuments(ownerFilter);

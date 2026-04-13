@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, hasPermission } = require('../middleware/auth');
 
 // GET all products
-router.get('/', protect, adminOnly, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const products = await Product.find({ owner: req.user._id }).sort({ createdAt: -1 });
     res.json(products);
@@ -12,7 +12,7 @@ router.get('/', protect, adminOnly, async (req, res) => {
 });
 
 // GET single product
-router.get('/:id', protect, adminOnly, async (req, res) => {
+router.get('/:id', protect, async (req, res) => {
   try {
     const product = await Product.findOne({ _id: req.params.id, owner: req.user._id });
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -21,7 +21,7 @@ router.get('/:id', protect, adminOnly, async (req, res) => {
 });
 
 // POST create product
-router.post('/', protect, adminOnly, async (req, res) => {
+router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
   try {
     const { name, category, price, quantity, description, barcode, qrCode } = req.body;
     if (!name || !category || price == null) return res.status(400).json({ message: 'Name, category, price are required' });
@@ -41,7 +41,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 });
 
 // PUT update product
-router.put('/:id', protect, adminOnly, async (req, res) => {
+router.put('/:id', protect, hasPermission('editProducts'), async (req, res) => {
   try {
     const { expectedUpdatedAt, ...updatePayload } = req.body;
     const current = await Product.findOne({ _id: req.params.id, owner: req.user._id });
@@ -65,7 +65,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 });
 
 // DELETE product
-router.delete('/:id', protect, adminOnly, async (req, res) => {
+router.delete('/:id', protect, hasPermission('deleteProducts'), async (req, res) => {
   try {
     const expectedUpdatedAt = req.body?.expectedUpdatedAt;
     const current = await Product.findOne({ _id: req.params.id, owner: req.user._id });

@@ -18,7 +18,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const sections = [...new Set(navItems.map(i => i.section))];
+  const supervisorHiddenRoutes = ['/products', '/stock-in', '/sales', '/sales-list', '/pending', '/reports'];
+  const visibleItems = user?.role === 'supervisor'
+    ? navItems.filter((item) => !supervisorHiddenRoutes.includes(item.to))
+    : navItems;
+  const sections = [...new Set(visibleItems.map(i => i.section))];
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -37,7 +41,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         {sections.map(section => (
           <div key={section}>
             <div className="nav-section">{section}</div>
-            {navItems.filter(i => i.section === section).map(item => (
+            {visibleItems.filter(i => i.section === section).map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}

@@ -2,10 +2,19 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  shopOwner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['admin', 'user'], default: 'user' },
+  role: { type: String, enum: ['admin', 'supervisor', 'user'], default: 'user' },
+  status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
+  permissions: {
+    viewReports: { type: Boolean, default: false },
+    addProducts: { type: Boolean, default: false },
+    editProducts: { type: Boolean, default: false },
+    deleteProducts: { type: Boolean, default: false },
+    manageUsers: { type: Boolean, default: false },
+  },
   resetPasswordToken: { type: String, default: null },
   resetPasswordExpires: { type: Date, default: null },
 }, { timestamps: true });

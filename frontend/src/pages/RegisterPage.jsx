@@ -8,12 +8,23 @@ import toast from 'react-hot-toast';
 export default function RegisterPage() {
   const [form, setForm] = useState({ shopName: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { register, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+    if (!emailOk) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    const strong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.password);
+    if (!strong) {
+      setError('Password must be 8+ chars with uppercase, lowercase and number.');
+      return;
+    }
     const res = await register(form.shopName, form.email, form.password);
     if (res.success) {
       toast.success('Shop created successfully. Please login with the new account.');
@@ -42,8 +53,13 @@ export default function RegisterPage() {
               value={form.shopName} onChange={e => setForm({ ...form, shopName: e.target.value })} required />
             <input className="auth-modern-input" type="email" placeholder="Email address"
               value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
-            <input className="auth-modern-input" type="password" placeholder="Password"
-              value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} />
+            <div className="auth-modern-password-row">
+              <input className="auth-modern-input" type={showPassword ? 'text' : 'password'} placeholder="Password"
+                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={8} />
+              <button type="button" className="auth-modern-eye" onClick={() => setShowPassword((v) => !v)}>
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
             <button type="submit" className="auth-modern-btn" disabled={loading}>
               {loading ? <><span className="spinner"></span> Creating...</> : 'Create Shop Account'}
             </button>

@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const StockIn = require('../models/StockIn');
 const Product = require('../models/Product');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, hasPermission } = require('../middleware/auth');
 
 // GET all stock-in records
-router.get('/', protect, adminOnly, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const records = await StockIn.find({ owner: req.user._id }).populate('product', 'name category').sort({ date: -1 });
     res.json(records);
@@ -13,7 +13,7 @@ router.get('/', protect, adminOnly, async (req, res) => {
 });
 
 // POST stock in - increase product quantity
-router.post('/', protect, adminOnly, async (req, res) => {
+router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
   try {
     const { productId, quantity, note, date, expectedProductUpdatedAt, expectedProductQuantity } = req.body;
     if (!productId || !quantity) return res.status(400).json({ message: 'Product and quantity required' });

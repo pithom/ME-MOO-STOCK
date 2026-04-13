@@ -390,16 +390,17 @@ select.form-control option { background: var(--dark-2); }
   position: relative;
 }
 .auth-modern-password-row .auth-modern-input {
-  padding-right: 130px;
+  padding-right: 140px;
 }
-.auth-modern-link {
+.auth-modern-eye {
   position: absolute;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 12px;
-  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
 }
 .auth-modern-btn {
   width: 100%;

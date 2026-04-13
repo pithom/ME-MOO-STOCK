@@ -7,7 +7,6 @@ import { ThemeProvider } from './context/ThemeProvider';
 import { useTheme } from './context/useTheme';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProductsPage from './pages/ProductsPage';
 import StockInPage from './pages/StockInPage';
@@ -16,15 +15,13 @@ import SalesListPage from './pages/SalesListPage';
 import PendingPage from './pages/PendingPage';
 import ReportsPage from './pages/ReportsPage';
 import AdminSettingsPage from './pages/AdminSettingsPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const ProtectedLayout = ({ children }) => {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin') return <Navigate to="/login" replace />;
+  if (user.status === 'Inactive') return <Navigate to="/login" replace />;
   return (
     <div className="layout">
       <Sidebar isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -50,9 +47,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-      <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
-      <Route path="/reset-password/:token" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedLayout><DashboardPage /></ProtectedLayout>} />
       <Route path="/products" element={<ProtectedLayout><ProductsPage /></ProtectedLayout>} />
       <Route path="/stock-in" element={<ProtectedLayout><StockInPage /></ProtectedLayout>} />

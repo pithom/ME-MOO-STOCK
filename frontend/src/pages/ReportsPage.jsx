@@ -5,13 +5,19 @@ import { format } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { useAuth } from '../context/useAuth';
 
 export default function ReportsPage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState('daily');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [dailyData, setDailyData] = useState(null);
   const [pendingData, setPendingData] = useState(null);
+  const [betweenData, setBetweenData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const canViewReports = user?.role === 'admin' || user?.permissions?.viewReports;
 
   const fetchDaily = useCallback(async () => {
     setLoading(true);
@@ -31,10 +37,30 @@ export default function ReportsPage() {
     finally { setLoading(false); }
   }, []);
 
+  const fetchBetween = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await reportsAPI.getBetween(startDate, endDate);
+      setBetweenData(data);
+    } catch {
+      toast.error('Failed to load between-dates report');
+    } finally { setLoading(false); }
+  }, [startDate, endDate]);
+
   useEffect(() => {
     if (tab === 'daily') fetchDaily();
-    else fetchPending();
-  }, [tab, fetchDaily, fetchPending]);
+    else if (tab === 'pending') fetchPending();
+    else fetchBetween();
+  }, [tab, fetchDaily, fetchPending, fetchBetween]);
+
+  if (!canViewReports) {
+    return (
+      <div className="card">
+        <h2 style={{ marginBottom: 8 }}>Reports Access Restricted</h2>
+        <p style={{ color: 'var(--text-muted)' }}>Your account does not have the "View Reports" permission.</p>
+      </div>
+    );
+  }
 
   const tabStyle = (t) => ({
     padding: '10px 24px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14,
@@ -146,6 +172,7 @@ export default function ReportsPage() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         <button style={tabStyle('daily')} onClick={() => setTab('daily')}>📅 Daily Sales</button>
         <button style={tabStyle('pending')} onClick={() => setTab('pending')}>💳 Pending Payments</button>
+        <button style={tabStyle('between')} onClick={() => setTab('between')}>🗓️ Between Dates</button>
       </div>
 
       {/* Daily Report */}
@@ -281,6 +308,41 @@ export default function ReportsPage() {
                 )}
               </div>
             </>
+          ) : null}
+        </div>
+      )}
+
+      {tab === 'between' && (
+        <div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+            <input type="date" className="form-control" style={{ width: 200 }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <input type="date" className="form-control" style={{ width: 200 }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <button className="btn btn-primary" onClick={fetchBetween}>Load Between Dates</button>
+          </div>
+          {loading ? (
+            <div className="page-loader"><div className="spinner" style={{ width: 36, height: 36 }}></div></div>
+          ) : betweenData ? (
+            <div className="card" style={{ padding: 0 }}>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>#</th><th>Product</th><th>Qty</th><th>Total</th><th>Payment</th><th>Date</th></tr>
+                  </thead>
+                  <tbody>
+                    {betweenData.sales.map((s, i) => (
+                      <tr key={s._id}>
+                        <td>{i + 1}</td>
+                        <td>{s.product?.name || '-'}</td>
+                        <td>{s.quantity}</td>
+                        <td>{s.totalPrice?.toLocaleString?.() || s.totalPrice}</td>
+                        <td>{s.paymentStatus}</td>
+                        <td>{format(new Date(s.date), 'dd MMM yyyy')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           ) : null}
         </div>
       )}

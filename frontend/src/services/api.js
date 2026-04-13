@@ -30,6 +30,11 @@ export const authAPI = {
   register: (data) => API.post('/auth/register', data),
   me: () => API.get('/auth/me'),
   updateProfile: (data) => API.put('/auth/profile', data),
+  getUsers: () => API.get('/auth/users'),
+  createUser: (data) => API.post('/auth/users', data),
+  updateUserStatus: (id, status) => API.patch(`/auth/users/${id}/status`, { status }),
+  updateUser: (id, data) => API.patch(`/auth/users/${id}`, data),
+  deleteUser: (id) => API.delete(`/auth/users/${id}`),
   forgotPassword: (email) => API.post('/auth/forgot-password', { email }),
   resetPassword: (token, password) => API.post(`/auth/reset-password/${token}`, { password }),
 };
@@ -97,6 +102,7 @@ export const dashboardAPI = {
 
 export const reportsAPI = {
   getDaily: (date) => API.get(`/reports/daily${date ? `?date=${date}` : ''}`),
+  getBetween: (startDate, endDate) => API.get(`/reports/between?startDate=${startDate}&endDate=${endDate}`),
   getPending: () => API.get('/reports/pending'),
 };
 

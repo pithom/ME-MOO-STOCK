@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Sale = require('../models/Sale');
 const Product = require('../models/Product');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, hasPermission } = require('../middleware/auth');
 
 // GET all sales
-router.get('/', protect, adminOnly, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const sales = await Sale.find({ owner: req.user._id }).populate('product', 'name category price').sort({ date: -1 });
     res.json(sales);
@@ -13,7 +13,7 @@ router.get('/', protect, adminOnly, async (req, res) => {
 });
 
 // GET pending payments
-router.get('/pending', protect, adminOnly, async (req, res) => {
+router.get('/pending', protect, async (req, res) => {
   try {
     const pending = await Sale.find({ owner: req.user._id, paymentStatus: 'Pending' })
       .populate('product', 'name category price')
@@ -23,7 +23,7 @@ router.get('/pending', protect, adminOnly, async (req, res) => {
 });
 
 // POST create a sale
-router.post('/', protect, adminOnly, async (req, res) => {
+router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
   try {
     const {
       productId,
@@ -88,7 +88,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 });
 
 // PATCH mark pending sale as paid
-router.patch('/:id/pay', protect, adminOnly, async (req, res) => {
+router.patch('/:id/pay', protect, async (req, res) => {
   try {
     const { paymentType } = req.body;
     const sale = await Sale.findOne({ _id: req.params.id, owner: req.user._id });
@@ -110,7 +110,7 @@ router.patch('/:id/pay', protect, adminOnly, async (req, res) => {
 });
 
 // PATCH mark sale as returned and restore stock
-router.patch('/:id/return', protect, adminOnly, async (req, res) => {
+router.patch('/:id/return', protect, async (req, res) => {
   try {
     const { returnMethod, returnNote } = req.body;
     const sale = await Sale.findOne({ _id: req.params.id, owner: req.user._id });
@@ -138,7 +138,7 @@ router.patch('/:id/return', protect, adminOnly, async (req, res) => {
 });
 
 // DELETE sale
-router.delete('/:id', protect, adminOnly, async (req, res) => {
+router.delete('/:id', protect, hasPermission('deleteProducts'), async (req, res) => {
   try {
     const sale = await Sale.findOneAndDelete({ _id: req.params.id, owner: req.user._id });
     if (!sale) return res.status(404).json({ message: 'Sale not found' });

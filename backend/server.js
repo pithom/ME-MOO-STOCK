@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const User = require('./models/User');
 
 dotenv.config();
 
@@ -55,13 +56,41 @@ app.use('/api/reports', require('./routes/reports'));
 if (process.env.NODE_ENV === 'production') {
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
   app.use(express.static(frontendDist));
-  app.get('*', (_req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
+  app.get('/{*any}', (_req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
 }
 
 // ─── MongoDB Connection ───────────────────────────────────────────────────────
+const ensureDefaultSupervisor = async () => {
+  const email = 'cfeddx6@gmail.com';
+  const existing = await User.findOne({ email });
+  if (existing) return;
+
+  const supervisor = await User.create({
+    name: 'Default Supervisor',
+    email,
+    password: 'hot9stone@gmail.com',
+    role: 'supervisor',
+    status: 'Active',
+    permissions: {
+      viewReports: true,
+      addProducts: true,
+      editProducts: true,
+      deleteProducts: false,
+      manageUsers: true,
+    },
+  });
+  supervisor.shopOwner = supervisor._id;
+  await supervisor.save();
+  console.log('✅ Default supervisor account initialized');
+};
+
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
+  .then(async () => {
+    console.log('✅ MongoDB connected');
+    await ensureDefaultSupervisor();
+  })
   .catch(err => console.error('❌ MongoDB error:', err));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+ 
