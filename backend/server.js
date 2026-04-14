@@ -12,6 +12,17 @@ dotenv.config();
 const app = express();
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
+const addOriginVariants = (origins, rawValue) => {
+  const value = String(rawValue || '').trim();
+  if (!value) return;
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    origins.add(value);
+    return;
+  }
+  origins.add(`https://${value}`);
+  origins.add(`http://${value}`);
+};
+
 const buildAllowedOrigins = () => {
   const origins = new Set([
     'http://localhost:5173',
@@ -19,7 +30,7 @@ const buildAllowedOrigins = () => {
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
   ]);
-  if (process.env.FRONTEND_URL) origins.add(process.env.FRONTEND_URL);
+  addOriginVariants(origins, process.env.FRONTEND_URL);
   return origins;
 };
 

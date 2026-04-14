@@ -1,19 +1,14 @@
 ﻿services:
-  # Frontend Service
-  - type: web
+  # Frontend Service (Static Site)
+  - type: static
     name: me-moo-stock-frontend
-    runtime: node
     region: oregon
     rootDir: frontend
     buildCommand: npm install && npm run build
-    startCommand: npx serve -s dist -l 3000
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: me-moo-stock-backend
-          type: web
-          property: host
-          path: /api
+        sync: false
 
   # Backend Service
   - type: web
@@ -26,14 +21,9 @@
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: "10000"
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        fromService:
-          name: me-moo-stock-frontend
-          type: web
-          property: host
+        sync: false
