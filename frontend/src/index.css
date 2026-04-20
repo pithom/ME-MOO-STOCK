@@ -59,6 +59,7 @@ body {
   width: 100%;
   max-width: 100%;
   padding-left: var(--sidebar-w);
+  overflow-x: hidden;
 }
 .main-content {
   flex: 1;
@@ -66,6 +67,7 @@ body {
   max-width: 100%;
   min-width: 0;
   padding: 28px;
+  overflow-x: hidden;
 }
 .mobile-header { display: none; }
 
@@ -155,7 +157,12 @@ body {
 .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 
 /* ─── GRIDS ─── */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stats-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+  gap: 16px; 
+  margin-bottom: 28px;
+}
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
@@ -475,7 +482,7 @@ select.form-control option { background: var(--dark-2); }
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
-  .layout { padding-left: 0; }
+  .layout { padding-left: 0; width: 100%; }
   .sidebar {
     transform: translateX(-110%);
     width: min(88vw, 300px);
@@ -500,13 +507,36 @@ select.form-control option { background: var(--dark-2); }
     background: rgba(15, 15, 26, 0.95);
     border-bottom: 1px solid var(--card-border);
   }
-  .mobile-title { font-weight: 700; }
-  .main-content { padding: 16px; }
-  .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .settings-grid { grid-template-columns: 1fr; }
-  .stat-value { font-size: 22px; }
-  .page-title { font-size: 22px; }
-  td, th { padding: 11px 12px; }
+  .mobile-title { font-weight: 700; font-size: 18px; }
+  .main-content { 
+    padding: 16px; 
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  
+  /* ─── GRIDS ─── */
+  .grid-2, .grid-3, .stats-grid { grid-template-columns: 1fr !important; gap: 12px; }
+  .settings-grid { grid-template-columns: 1fr; gap: 12px; }
+  
+  /* ─── CARDS ─── */
+  .card, .stat-card { 
+    padding: 16px;
+    margin: 0;
+  }
+  .stat-card { flex-direction: column; text-align: center; }
+  .stat-value { font-size: 20px; }
+  .page-title { font-size: 20px; }
+  
+  /* ─── TEXT ─── */
+  td, th { 
+    padding: 10px 8px; 
+    font-size: 12px;
+    word-break: break-word;
+  }
+  
+  /* ─── AUTH FORMS ─── */
   .auth-overlay-content { left: 7%; right: 7%; bottom: 8%; }
   .auth-overlay-register { bottom: 6%; }
   .auth-image-shell { width: min(430px, 100%); min-height: min(660px, 86vh); border-radius: 18px; }
@@ -520,4 +550,31 @@ select.form-control option { background: var(--dark-2); }
   .auth-modern-body { padding: 14px 14px 18px; }
   .auth-modern-input { min-height: 44px; font-size: 14px; }
   .auth-modern-btn { min-height: 46px; font-size: 16px; }
+  
+  /* ─── BUTTONS ─── */
+  .btn { 
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+  
+  /* ─── TABLE ─── */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { font-size: 12px; }
+  
+  /* ─── CHARTS/CONTENT ─── */
+  canvas { width: 100% !important; height: auto !important; }
+}
+
+/* ─── EXTRA SMALL DEVICES (< 480px) ─── */
+@media (max-width: 480px) {
+  .main-content { padding: 12px; }
+  .card, .stat-card { padding: 12px; }
+  .page-title { font-size: 18px; }
+  .stat-value { font-size: 18px; }
+  .btn { font-size: 13px; padding: 10px 12px; }
+  td, th { padding: 8px 6px; font-size: 11px; }
+  .mobile-header { padding: 10px 12px; }
+  .stats-grid { gap: 8px; }
 }
