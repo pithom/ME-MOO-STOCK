@@ -35,11 +35,7 @@ const buildAllowedOrigins = () => {
 };
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow curl / Postman
-    if (buildAllowedOrigins().has(origin)) return callback(null, true);
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
+  origin: true, // Allow all origins temporarily
   credentials: true,
 }));
 
