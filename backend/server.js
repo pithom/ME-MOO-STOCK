@@ -67,7 +67,7 @@ app.use('/api/reports', require('./routes/reports'));
 if (process.env.NODE_ENV === 'production') {
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
   app.use(express.static(frontendDist));
-  app.get('/{*any}', (_req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
+  app.get('*', (_req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
 }
 
 // ─── MongoDB Connection ───────────────────────────────────────────────────────

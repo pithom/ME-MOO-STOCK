@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "start": "serve -s dist -l 3000",
     "lint": "eslint .",
     "preview": "vite preview",
     "mobile:init": "npx cap init memoo-stock com.memoo.stock --web-dir=dist",
