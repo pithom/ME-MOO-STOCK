@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/useAuth';
@@ -17,28 +18,53 @@ import ReportsPage from './pages/ReportsPage';
 import AdminSettingsPage from './pages/AdminSettingsPage';
 
 const ProtectedLayout = ({ children }) => {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const mobileHeader = (
+    <header className="mobile-header">
+      <button className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(true)}>☰ Menu</button>
+      <div className="mobile-title">ME-MOO STOCK</div>
+      <button className="btn btn-ghost btn-sm" onClick={toggleTheme}>
+        {theme === 'dark' ? '🌙' : '☀️'}
+      </button>
+    </header>
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const header = document.querySelector('header.mobile-header');
+    if (!header || !header.parentElement) return;
+    const firstScript = document.body.querySelector('script');
+    if (!firstScript) return;
+    if (header.nextElementSibling !== firstScript) {
+      document.body.insertBefore(header, firstScript);
+    }
+  }, [menuOpen, theme]);
+
+  if (!authReady) {
+    return <div className="page-loader"><div className="spinner" style={{ width: 36, height: 36 }}></div></div>;
+  }
   if (!user) return <Navigate to="/login" replace />;
   if (user.status === 'Inactive') return <Navigate to="/login" replace />;
+
   return (
-    <div className="layout">
+    <>
+      {typeof document !== 'undefined' ? createPortal(mobileHeader, document.body) : mobileHeader}
+      <div className="layout has-mobile-header">
       <Sidebar isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <header className="mobile-header">
-        <button className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(true)}>☰ Menu</button>
-        <div className="mobile-title">StockPro</div>
-        <button className="btn btn-ghost btn-sm" onClick={toggleTheme}>
-          {theme === 'dark' ? '🌙' : '☀️'}
-        </button>
-      </header>
       <main className="main-content">{children}</main>
-    </div>
+      </div>
+    </>
   );
 };
 
 const PublicRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
+  if (!authReady) {
+    return <div className="page-loader"><div className="spinner" style={{ width: 36, height: 36 }}></div></div>;
+  }
   if (user) return <Navigate to="/" replace />;
   return children;
 };

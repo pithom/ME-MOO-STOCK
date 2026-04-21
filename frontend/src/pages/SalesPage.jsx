@@ -90,7 +90,7 @@ export default function SalesPage() {
         )}
       </div>
 
-      <div style={{ maxWidth: 760 }}>
+      <div className="sale-form-shell" style={{ maxWidth: 760 }}>
         <div className="card">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -107,7 +107,7 @@ export default function SalesPage() {
             </div>
 
             {selectedProduct && (
-              <div className="card" style={{ marginBottom: 18, background: 'var(--dark-2)', padding: 16, display: 'flex', gap: 20 }}>
+              <div className="card sale-product-preview" style={{ marginBottom: 18, background: 'var(--dark-2)', padding: 16, display: 'flex', gap: 20 }}>
                 <div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>PRODUCT</div>
                   <div style={{ fontWeight: 700 }}>{selectedProduct.name}</div>
@@ -152,14 +152,14 @@ export default function SalesPage() {
             </div>
 
             {/* TOTAL PRICE DISPLAY */}
-            <div className="card" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', padding: '16px 20px', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="card sale-total-row" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', padding: '16px 20px', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>💰 Total Price</span>
               <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--primary-light)' }}>RWF {totalPrice}</span>
             </div>
 
             <div className="form-group">
               <label className="form-label">Payment Type</label>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div className="sale-payment-options" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 {['Paid', 'Pending'].map(type => (
                   <label key={type} style={{ flex: 1, cursor: 'pointer' }}>
                     <input type="radio" name="paymentStatus" value={type}

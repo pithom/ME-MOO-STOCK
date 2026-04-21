@@ -169,7 +169,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+      <div className="reports-tabs" style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         <button style={tabStyle('daily')} onClick={() => setTab('daily')}>📅 Daily Sales</button>
         <button style={tabStyle('pending')} onClick={() => setTab('pending')}>💳 Pending Payments</button>
         <button style={tabStyle('between')} onClick={() => setTab('between')}>🗓️ Between Dates</button>
@@ -178,8 +178,8 @@ export default function ReportsPage() {
       {/* Daily Report */}
       {tab === 'daily' && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <input type="date" className="form-control" style={{ width: 200 }} value={date} onChange={e => setDate(e.target.value)} />
+          <div className="reports-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <input type="date" className="form-control reports-date-input" style={{ width: 200 }} value={date} onChange={e => setDate(e.target.value)} />
             <button className="btn btn-primary" onClick={fetchDaily}>🔍 Load Report</button>
             <button className="btn btn-success" onClick={downloadDailyPdf} disabled={!dailyData}>⬇️ Download PDF</button>
             <button className="btn btn-ghost" onClick={downloadDailyExcel} disabled={!dailyData}>📊 Download Excel</button>
@@ -252,7 +252,7 @@ export default function ReportsPage() {
       {/* Pending Report */}
       {tab === 'pending' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+          <div className="reports-toolbar reports-toolbar-right" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
             <button className="btn btn-success" onClick={downloadPendingPdf} disabled={!pendingData}>⬇️ Download PDF</button>
             <button className="btn btn-ghost" onClick={downloadPendingExcel} disabled={!pendingData}>📊 Download Excel</button>
           </div>
@@ -314,9 +314,9 @@ export default function ReportsPage() {
 
       {tab === 'between' && (
         <div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-            <input type="date" className="form-control" style={{ width: 200 }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            <input type="date" className="form-control" style={{ width: 200 }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <div className="reports-toolbar" style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+            <input type="date" className="form-control reports-date-input" style={{ width: 200 }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <input type="date" className="form-control reports-date-input" style={{ width: 200 }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             <button className="btn btn-primary" onClick={fetchBetween}>Load Between Dates</button>
           </div>
           {loading ? (

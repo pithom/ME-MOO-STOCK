@@ -18,6 +18,12 @@ API.interceptors.request.use((config) => {
 API.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem('stockUser');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth:session-expired'));
+      }
+    }
     if (navigator.onLine) {
       processSyncQueue().catch(() => {});
     }

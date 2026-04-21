@@ -155,7 +155,7 @@ export default function SalesListPage() {
                     </td>
                     <td style={{ color: 'var(--text-muted)' }}>{format(new Date(s.date), 'dd MMM yyyy')}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="table-action-group" style={{ display: 'flex', gap: 8 }}>
                         <button
                           className="btn btn-ghost btn-sm"
                           onClick={() => handleReturn(s)}

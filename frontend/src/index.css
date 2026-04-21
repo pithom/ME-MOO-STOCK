@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
 
 :root {
   --primary: #6366f1;
@@ -41,10 +41,12 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--dark);
   color: var(--text);
   min-height: 100vh;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
 }
 
 /* ─── SCROLLBAR ─── */
@@ -126,6 +128,7 @@ body {
 /* ─── PAGE HEADER ─── */
 .page-header { margin-bottom: 28px; }
 .page-title { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--text), var(--primary-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.page-title, .logo-text, .mobile-title { font-family: 'Manrope', 'Inter', 'Segoe UI', sans-serif; letter-spacing: 0.01em; }
 .page-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
 
 /* ─── CARDS ─── */
@@ -459,6 +462,15 @@ select.form-control option { background: var(--dark-2); }
 
 /* ─── TOP BAR ─── */
 .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 14px; }
+.table-action-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.sale-form-shell { width: 100%; max-width: 100%; }
+.sale-product-preview { flex-wrap: wrap; align-items: flex-start; }
+.sale-total-row { gap: 10px; flex-wrap: wrap; }
+.sale-payment-options > label { min-width: 180px; }
+.reports-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+.reports-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.reports-toolbar-right { justify-content: flex-end; }
+.reports-date-input { width: min(220px, 100%); }
 
 /* ─── LOADING ─── */
 .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
@@ -497,8 +509,11 @@ select.form-control option { background: var(--dark-2); }
     z-index: 1100;
   }
   .mobile-header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
     z-index: 900;
     display: flex;
     align-items: center;
@@ -508,12 +523,15 @@ select.form-control option { background: var(--dark-2); }
     border-bottom: 1px solid var(--card-border);
   }
   .mobile-title { font-weight: 700; font-size: 18px; }
-  .main-content { 
+  .main-content {
     padding: 16px; 
     width: 100%;
     max-width: 100%;
     min-width: 0;
     overflow-x: hidden;
+  }
+  .layout.has-mobile-header .main-content {
+    padding-top: calc(16px + 64px);
   }
   
   /* ─── GRIDS ─── */
@@ -552,11 +570,40 @@ select.form-control option { background: var(--dark-2); }
   .auth-modern-btn { min-height: 46px; font-size: 16px; }
   
   /* ─── BUTTONS ─── */
-  .btn { 
-    width: 100%;
+  .btn {
+    width: auto;
     justify-content: center;
     padding: 12px 16px;
     min-height: 44px;
+  }
+  .topbar .btn,
+  .modal-footer .btn,
+  .reports-toolbar .btn {
+    width: 100%;
+  }
+  .table-action-group .btn {
+    width: auto;
+    min-height: 36px;
+    padding: 8px 12px;
+  }
+  .sale-payment-options > label {
+    min-width: 100%;
+  }
+  .sale-total-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  .sale-total-row span:last-child {
+    font-size: 20px !important;
+  }
+  .reports-tabs > button {
+    flex: 1 1 100%;
+  }
+  .reports-date-input {
+    width: 100% !important;
+  }
+  .reports-toolbar-right {
+    justify-content: stretch !important;
   }
   
   /* ─── TABLE ─── */
@@ -570,6 +617,7 @@ select.form-control option { background: var(--dark-2); }
 /* ─── EXTRA SMALL DEVICES (< 480px) ─── */
 @media (max-width: 480px) {
   .main-content { padding: 12px; }
+  .layout.has-mobile-header .main-content { padding-top: calc(12px + 60px); }
   .card, .stat-card { padding: 12px; }
   .page-title { font-size: 18px; }
   .stat-value { font-size: 18px; }
@@ -577,4 +625,6 @@ select.form-control option { background: var(--dark-2); }
   td, th { padding: 8px 6px; font-size: 11px; }
   .mobile-header { padding: 10px 12px; }
   .stats-grid { gap: 8px; }
+  .sale-product-preview { gap: 12px !important; }
+  .sale-product-preview > div { width: 100%; }
 }

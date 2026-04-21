@@ -148,7 +148,7 @@ router.post('/forgot-password', async (req, res) => {
       await transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: user.email,
-        subject: 'StockPro Password Reset',
+        subject: 'ME-MOO STOCK Password Reset',
         text: `Reset your password using this link: ${resetUrl}`,
       });
     } else {
@@ -213,7 +213,13 @@ router.put('/profile', protect, async (req, res) => {
     const { name, email, password } = req.body;
     if (name) user.name = name;
     if (email) user.email = normalizeEmail(email);
-    if (password) user.password = normalizePassword(password);
+    if (password) {
+      const normalizedPassword = normalizePassword(password);
+      if (!STRONG_PASSWORD_REGEX.test(normalizedPassword)) {
+        return res.status(400).json({ message: 'Password must be at least 8 chars and include uppercase, lowercase and number' });
+      }
+      user.password = normalizedPassword;
+    }
     await user.save();
 
     res.json({

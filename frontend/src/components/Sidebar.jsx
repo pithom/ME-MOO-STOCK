@@ -32,7 +32,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       <div className="sidebar-logo">
         <div className="logo-icon">🏪</div>
         <div>
-          <div className="logo-text">StockPro</div>
+          <div className="logo-text">ME-MOO STOCK</div>
           <div className="logo-sub">Stock Management</div>
         </div>
       </div>

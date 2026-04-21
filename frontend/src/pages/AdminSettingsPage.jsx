@@ -155,8 +155,8 @@ export default function AdminSettingsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">⚙️ Admin Settings</h1>
-        <p className="page-subtitle">Update profile and system preferences</p>
+        <h1 className="page-title">⚙️ Account Settings</h1>
+        <p className="page-subtitle">Edit your profile and account preferences</p>
       </div>
 
       <div className="settings-grid">
@@ -312,7 +312,7 @@ export default function AdminSettingsPage() {
                             .join(', ') || 'none'}
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: 8 }}>
+                          <div className="table-action-group" style={{ display: 'flex', gap: 8 }}>
                             <button className="btn btn-ghost btn-sm" onClick={() => toggleStatus(u)} type="button">
                               {u.status === 'Active' ? 'Deactivate' : 'Activate'}
                             </button>

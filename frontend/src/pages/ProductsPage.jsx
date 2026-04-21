@@ -146,7 +146,7 @@ export default function ProductsPage() {
                     </td>
                     <td style={{ color: 'var(--text-muted)' }}>{p.barcode || '—'}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="table-action-group" style={{ display: 'flex', gap: 8 }}>
                         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>
                         <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)} disabled={deleting === p._id}>
                           {deleting === p._id ? '...' : '🗑️ Delete'}
