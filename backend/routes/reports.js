@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Sale = require('../models/Sale');
 const { protect, hasPermission } = require('../middleware/auth');
+const resolveShopOwnerId = (user) => user.shopOwner || user._id;
 
 // GET daily sales report
 router.get('/daily', protect, hasPermission('viewReports'), async (req, res) => {
@@ -10,7 +11,8 @@ router.get('/daily', protect, hasPermission('viewReports'), async (req, res) => 
     const targetDate = date ? new Date(date) : new Date();
     const start = new Date(targetDate.setHours(0, 0, 0, 0));
     const end = new Date(targetDate.setHours(23, 59, 59, 999));
-    const sales = await Sale.find({ owner: req.user._id, date: { $gte: start, $lte: end } })
+    const ownerId = resolveShopOwnerId(req.user);
+    const sales = await Sale.find({ owner: ownerId, date: { $gte: start, $lte: end } })
       .populate('product', 'name category price');
     const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid' && !s.isReturned).reduce((sum, s) => sum + s.totalPrice, 0);
     const totalPending = sales.filter(s => s.paymentStatus === 'Pending').reduce((sum, s) => sum + s.amountOwed, 0);
@@ -21,7 +23,8 @@ router.get('/daily', protect, hasPermission('viewReports'), async (req, res) => 
 // GET pending payments report
 router.get('/pending', protect, hasPermission('viewReports'), async (req, res) => {
   try {
-    const pending = await Sale.find({ owner: req.user._id, paymentStatus: 'Pending' })
+    const ownerId = resolveShopOwnerId(req.user);
+    const pending = await Sale.find({ owner: ownerId, paymentStatus: 'Pending' })
       .populate('product', 'name category price')
       .sort({ date: -1 });
     const totalOwed = pending.reduce((sum, s) => sum + s.amountOwed, 0);
@@ -37,7 +40,8 @@ router.get('/between', protect, hasPermission('viewReports'), async (req, res) =
     const start = new Date(new Date(startDate).setHours(0, 0, 0, 0));
     const end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
 
-    const sales = await Sale.find({ owner: req.user._id, date: { $gte: start, $lte: end } })
+    const ownerId = resolveShopOwnerId(req.user);
+    const sales = await Sale.find({ owner: ownerId, date: { $gte: start, $lte: end } })
       .populate('product', 'name category price');
     const totalRevenue = sales.filter((s) => s.paymentStatus === 'Paid' && !s.isReturned)
       .reduce((sum, s) => sum + s.totalPrice, 0);

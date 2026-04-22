@@ -69,22 +69,43 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+const PermissionRoute = ({ allow, fallback = '/sales', children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!allow) return <Navigate to={fallback} replace />;
+  return children;
+};
+
 function AppRoutes() {
+  const { user } = useAuth();
+  const isUser = user?.role === 'user';
+  const canUseInventory = Boolean(user?.permissions?.addProducts || user?.permissions?.editProducts || user?.permissions?.deleteProducts);
+  const canViewReports = Boolean(user?.permissions?.viewReports);
+  const canCreateSale = Boolean(user?.permissions?.createSale);
+  const canViewSalesHistory = Boolean(user?.permissions?.viewSalesHistory);
+  const canViewPendingPayments = Boolean(user?.permissions?.viewPendingPayments);
+  const canManageUsers = Boolean(user?.role === 'admin' || user?.permissions?.manageUsers);
+
+  // Default landing page for a user-role account; prevents redirect loops for
+  // supervisor accounts (manageUsers only, no sales/inventory permissions).
+  const userHome = canCreateSale ? '/sales' : canManageUsers ? '/settings' : '/sales-list';
+
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/" element={<ProtectedLayout><DashboardPage /></ProtectedLayout>} />
-      <Route path="/products" element={<ProtectedLayout><ProductsPage /></ProtectedLayout>} />
-      <Route path="/stock-in" element={<ProtectedLayout><StockInPage /></ProtectedLayout>} />
-      <Route path="/sales" element={<ProtectedLayout><SalesPage /></ProtectedLayout>} />
-      <Route path="/sales-list" element={<ProtectedLayout><SalesListPage /></ProtectedLayout>} />
-      <Route path="/pending" element={<ProtectedLayout><PendingPage /></ProtectedLayout>} />
-      <Route path="/reports" element={<ProtectedLayout><ReportsPage /></ProtectedLayout>} />
-      <Route path="/settings" element={<ProtectedLayout><AdminSettingsPage /></ProtectedLayout>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/" element={<ProtectedLayout><PermissionRoute allow={!isUser} fallback={userHome}><DashboardPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="/products" element={<ProtectedLayout><PermissionRoute allow={!isUser || canUseInventory} fallback={userHome}><ProductsPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="/stock-in" element={<ProtectedLayout><PermissionRoute allow={!isUser || canUseInventory} fallback={userHome}><StockInPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="/sales" element={<ProtectedLayout><PermissionRoute allow={!isUser || canCreateSale} fallback={userHome}><SalesPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="/sales-list" element={<ProtectedLayout><PermissionRoute allow={!isUser || canViewSalesHistory} fallback={userHome}><SalesListPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="/pending" element={<ProtectedLayout><PermissionRoute allow={!isUser || canViewPendingPayments} fallback={userHome}><PendingPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="/reports" element={<ProtectedLayout><PermissionRoute allow={!isUser || canViewReports} fallback={userHome}><ReportsPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="/settings" element={<ProtectedLayout><PermissionRoute allow={!isUser || canManageUsers} fallback={userHome}><AdminSettingsPage /></PermissionRoute></ProtectedLayout>} />
+      <Route path="*" element={<Navigate to={isUser ? userHome : '/'} replace />} />
     </Routes>
   );
 }
+
 
 function AppShell() {
   const { theme } = useTheme();

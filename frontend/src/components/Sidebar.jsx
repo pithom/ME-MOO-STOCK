@@ -18,9 +18,21 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const supervisorHiddenRoutes = ['/products', '/stock-in', '/sales', '/sales-list', '/pending', '/reports'];
-  const visibleItems = user?.role === 'supervisor'
-    ? navItems.filter((item) => !supervisorHiddenRoutes.includes(item.to))
+  const userPermissions = user?.permissions || {};
+  const isRegularUser = user?.role === 'user';
+  const visibleItems = isRegularUser
+    ? navItems.filter((item) => {
+      if (item.to === '/sales') return Boolean(userPermissions.createSale);
+      if (item.to === '/sales-list') return Boolean(userPermissions.viewSalesHistory);
+      if (item.to === '/products' || item.to === '/stock-in') {
+        return Boolean(userPermissions.addProducts || userPermissions.editProducts || userPermissions.deleteProducts);
+      }
+      if (item.to === '/reports') return Boolean(userPermissions.viewReports);
+      if (item.to === '/pending') return Boolean(userPermissions.viewPendingPayments);
+      if (item.to === '/settings') return Boolean(userPermissions.manageUsers);
+      if (item.to === '/') return false;
+      return false;
+    })
     : navItems;
   const sections = [...new Set(visibleItems.map(i => i.section))];
 

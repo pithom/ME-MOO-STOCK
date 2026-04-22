@@ -3,19 +3,22 @@ const router = express.Router();
 const Sale = require('../models/Sale');
 const Product = require('../models/Product');
 const { protect, hasPermission } = require('../middleware/auth');
+const resolveShopOwnerId = (user) => user.shopOwner || user._id;
 
 // GET all sales
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, hasPermission('viewSalesHistory'), async (req, res) => {
   try {
-    const sales = await Sale.find({ owner: req.user._id }).populate('product', 'name category price').sort({ date: -1 });
+    const ownerId = resolveShopOwnerId(req.user);
+    const sales = await Sale.find({ owner: ownerId }).populate('product', 'name category price').sort({ date: -1 });
     res.json(sales);
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 // GET pending payments
-router.get('/pending', protect, async (req, res) => {
+router.get('/pending', protect, hasPermission('viewPendingPayments'), async (req, res) => {
   try {
-    const pending = await Sale.find({ owner: req.user._id, paymentStatus: 'Pending' })
+    const ownerId = resolveShopOwnerId(req.user);
+    const pending = await Sale.find({ owner: ownerId, paymentStatus: 'Pending' })
       .populate('product', 'name category price')
       .sort({ date: -1 });
     res.json(pending);
@@ -23,7 +26,7 @@ router.get('/pending', protect, async (req, res) => {
 });
 
 // POST create a sale
-router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
+router.post('/', protect, hasPermission('createSale'), async (req, res) => {
   try {
     const {
       productId,
@@ -38,7 +41,8 @@ router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
     } = req.body;
     if (!productId || !quantity) return res.status(400).json({ message: 'Product and quantity required' });
 
-    const product = await Product.findOne({ _id: productId, owner: req.user._id });
+    const ownerId = resolveShopOwnerId(req.user);
+    const product = await Product.findOne({ _id: productId, owner: ownerId });
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
     if (expectedProductUpdatedAt && new Date(expectedProductUpdatedAt).getTime() !== new Date(product.updatedAt).getTime()) {
@@ -70,7 +74,7 @@ router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
     await product.save();
 
     const sale = await Sale.create({
-      owner: req.user._id,
+      owner: ownerId,
       product: productId,
       quantity: qty,
       unitPrice: saleUnitPrice,
@@ -88,10 +92,11 @@ router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
 });
 
 // PATCH mark pending sale as paid
-router.patch('/:id/pay', protect, async (req, res) => {
+router.patch('/:id/pay', protect, hasPermission('viewPendingPayments'), async (req, res) => {
   try {
     const { paymentType } = req.body;
-    const sale = await Sale.findOne({ _id: req.params.id, owner: req.user._id });
+    const ownerId = resolveShopOwnerId(req.user);
+    const sale = await Sale.findOne({ _id: req.params.id, owner: ownerId });
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
     if (sale.paymentStatus === 'Paid') return res.status(400).json({ message: 'Already paid' });
 
@@ -110,17 +115,18 @@ router.patch('/:id/pay', protect, async (req, res) => {
 });
 
 // PATCH mark sale as returned and restore stock
-router.patch('/:id/return', protect, async (req, res) => {
+router.patch('/:id/return', protect, hasPermission('viewSalesHistory'), async (req, res) => {
   try {
     const { returnMethod, returnNote } = req.body;
-    const sale = await Sale.findOne({ _id: req.params.id, owner: req.user._id });
+    const ownerId = resolveShopOwnerId(req.user);
+    const sale = await Sale.findOne({ _id: req.params.id, owner: ownerId });
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
     if (sale.isReturned) return res.status(400).json({ message: 'Sale is already returned' });
 
     const allowedMethods = ['Refund Cash', 'Exchange', 'Store Credit', 'Other'];
     const normalizedMethod = allowedMethods.includes(returnMethod) ? returnMethod : 'Other';
 
-    const product = await Product.findOne({ _id: sale.product, owner: req.user._id });
+    const product = await Product.findOne({ _id: sale.product, owner: ownerId });
     if (product) {
       product.quantity += Number(sale.quantity);
       await product.save();
@@ -140,9 +146,10 @@ router.patch('/:id/return', protect, async (req, res) => {
 // DELETE sale
 router.delete('/:id', protect, hasPermission('deleteProducts'), async (req, res) => {
   try {
-    const sale = await Sale.findOneAndDelete({ _id: req.params.id, owner: req.user._id });
+    const ownerId = resolveShopOwnerId(req.user);
+    const sale = await Sale.findOneAndDelete({ _id: req.params.id, owner: ownerId });
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
-    const product = await Product.findOne({ _id: sale.product, owner: req.user._id });
+    const product = await Product.findOne({ _id: sale.product, owner: ownerId });
     if (product) {
       product.quantity += Number(sale.quantity);
       await product.save();

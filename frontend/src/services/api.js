@@ -43,11 +43,18 @@ export const authAPI = {
   deleteUser: (id) => API.delete(`/auth/users/${id}`),
   forgotPassword: (email) => API.post('/auth/forgot-password', { email }),
   resetPassword: (token, password) => API.post(`/auth/reset-password/${token}`, { password }),
+  // Supervisor: manage admin accounts
+  getManagedAdmins: () => API.get('/auth/managed-admins'),
+  createManagedAdmin: (data) => API.post('/auth/managed-admins', data),
+  updateManagedAdminPassword: (id, password) => API.patch(`/auth/managed-admins/${id}/password`, { password }),
+  updateManagedAdminStatus: (id, status) => API.patch(`/auth/managed-admins/${id}/status`, { status }),
+  deleteManagedAdmin: (id) => API.delete(`/auth/managed-admins/${id}`),
 };
 
 export const productsAPI = {
   getAll: () => syncGet('products:list', () => API.get('/products')),
   getOne: (id) => API.get(`/products/${id}`),
+  importBulk: (items) => API.post('/products/import-bulk', { items }),
   create: (data) => runOrQueueMutation({
     method: 'post',
     url: '/products',
@@ -112,4 +119,9 @@ export const reportsAPI = {
   getPending: () => API.get('/reports/pending'),
 };
 
+export const activityLogAPI = {
+  getLogs: () => API.get('/activity-logs'),
+};
+
 export default API;
+

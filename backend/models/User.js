@@ -3,12 +3,16 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   shopOwner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['admin', 'supervisor', 'user'], default: 'user' },
+  role: { type: String, enum: ['admin', 'user'], default: 'user' },
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   permissions: {
+    createSale: { type: Boolean, default: false },
+    viewSalesHistory: { type: Boolean, default: false },
+    viewPendingPayments: { type: Boolean, default: false },
     viewReports: { type: Boolean, default: false },
     addProducts: { type: Boolean, default: false },
     editProducts: { type: Boolean, default: false },
