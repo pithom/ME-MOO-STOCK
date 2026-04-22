@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { productsAPI } from '../services/api';
 import QRCode from 'qrcode';
+import { useAuth } from '../context/useAuth';
 
 const EMPTY_FORM = { name: '', category: '', price: '', quantity: '', description: '', barcode: '', qrCode: '' };
 
 export default function ProductsPage() {
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -15,6 +17,9 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState(null);
   const lowStockThreshold = Number(localStorage.getItem('lowStockThreshold') || 5);
+  const canAddProducts = Boolean(user?.role === 'admin' || user?.permissions?.addProducts);
+  const canEditProducts = Boolean(user?.role === 'admin' || user?.permissions?.editProducts);
+  const canDeleteProducts = Boolean(user?.role === 'admin' || user?.permissions?.deleteProducts);
 
   const fetchProducts = async () => {
     try {
@@ -104,7 +109,7 @@ export default function ProductsPage() {
           <span className="search-icon">🔍</span>
           <input className="form-control" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <button className="btn btn-primary" onClick={openAdd}>＋ Add Product</button>
+        {canAddProducts && <button className="btn btn-primary" onClick={openAdd}>＋ Add Product</button>}
       </div>
 
       <div className="card" style={{ padding: 0 }}>
@@ -147,10 +152,12 @@ export default function ProductsPage() {
                     <td style={{ color: 'var(--text-muted)' }}>{p.barcode || '—'}</td>
                     <td>
                       <div className="table-action-group" style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)} disabled={deleting === p._id}>
-                          {deleting === p._id ? '...' : '🗑️ Delete'}
-                        </button>
+                        {canEditProducts && <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>}
+                        {canDeleteProducts && (
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)} disabled={deleting === p._id}>
+                            {deleting === p._id ? '...' : '🗑️ Delete'}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

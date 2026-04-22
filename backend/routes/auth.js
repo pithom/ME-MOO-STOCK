@@ -12,6 +12,7 @@ const normalizeEmail = (email = '') => String(email).trim().toLowerCase();
 const normalizePassword = (password = '') => String(password).trim();
 const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 const SUPERVISOR_EMAIL = 'cfeddx6@gmail.com';
+const IRADINE_EMAIL = 'iradine@gmail.com';
 
 const isPrimarySupervisor = (user) => (
   Boolean(user)
@@ -24,6 +25,18 @@ const requirePrimarySupervisor = (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not authorized' });
   if (isPrimarySupervisor(req.user)) return next();
   return res.status(403).json({ message: 'Supervisor access only' });
+};
+
+const buildManagedUserPermissions = (creator, overrides = {}) => {
+  const defaults = buildDefaultPermissions('user');
+  if (normalizeEmail(creator?.email) === IRADINE_EMAIL) {
+    defaults.addProducts = true;
+    defaults.editProducts = true;
+  }
+  return {
+    ...defaults,
+    ...(overrides || {}),
+  };
 };
 
 const buildDefaultPermissions = (role) => {
@@ -282,10 +295,7 @@ router.post('/users', protect, hasPermission('manageUsers'), async (req, res) =>
       password: normalizedPassword,
       role: normalizedRole,
       status: status === 'Inactive' ? 'Inactive' : 'Active',
-      permissions: {
-        ...buildDefaultPermissions(normalizedRole),
-        ...(permissions || {}),
-      },
+      permissions: buildManagedUserPermissions(req.user, permissions),
     });
 
     await ActivityLog.create({

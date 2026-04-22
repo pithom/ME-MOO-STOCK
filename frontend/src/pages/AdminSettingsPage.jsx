@@ -3,6 +3,20 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/useAuth';
 import { authAPI, productsAPI, activityLogAPI } from '../services/api';
 
+const buildDefaultManagedUserPermissions = (email = '') => {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  return {
+    createSale: true,
+    viewSalesHistory: true,
+    viewPendingPayments: false,
+    viewReports: false,
+    addProducts: normalizedEmail === 'iradine@gmail.com',
+    editProducts: normalizedEmail === 'iradine@gmail.com',
+    deleteProducts: false,
+    manageUsers: false,
+  };
+};
+
 export default function AdminSettingsPage() {
   const { user, updateProfile, loading } = useAuth();
   const [form, setForm] = useState({
@@ -34,16 +48,7 @@ export default function AdminSettingsPage() {
     email: '',
     password: '',
     status: 'Active',
-    permissions: {
-      createSale: true,
-      viewSalesHistory: true,
-      viewPendingPayments: false,
-      viewReports: false,
-      addProducts: false,
-      editProducts: false,
-      deleteProducts: false,
-      manageUsers: false,
-    },
+    permissions: buildDefaultManagedUserPermissions(user?.email),
   });
 
   const canManageUsers = user?.role === 'admin' || user?.permissions?.manageUsers;
@@ -148,7 +153,7 @@ export default function AdminSettingsPage() {
       toast.success('User created');
       setNewUser({
         name: '', email: '', password: '', status: 'Active',
-        permissions: { createSale: true, viewSalesHistory: true, viewPendingPayments: false, viewReports: false, addProducts: false, editProducts: false, deleteProducts: false, manageUsers: false },
+        permissions: buildDefaultManagedUserPermissions(user?.email),
       });
       fetchUsers();
       fetchLogs();
