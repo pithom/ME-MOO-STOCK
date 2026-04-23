@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Sale = require('../models/Sale');
 const { protect, hasPermission } = require('../middleware/auth');
+const { salePopulateOptions } = require('../utils/saleItems');
 const resolveShopOwnerId = (user) => user.shopOwner || user._id;
 
 // GET daily sales report
@@ -13,7 +14,7 @@ router.get('/daily', protect, hasPermission('viewReports'), async (req, res) => 
     const end = new Date(targetDate.setHours(23, 59, 59, 999));
     const ownerId = resolveShopOwnerId(req.user);
     const sales = await Sale.find({ owner: ownerId, date: { $gte: start, $lte: end } })
-      .populate('product', 'name category price');
+      .populate(salePopulateOptions);
     const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid' && !s.isReturned).reduce((sum, s) => sum + s.totalPrice, 0);
     const totalPending = sales.filter(s => s.paymentStatus === 'Pending').reduce((sum, s) => sum + s.amountOwed, 0);
     res.json({ sales, totalRevenue, totalPending, count: sales.length });
@@ -25,7 +26,7 @@ router.get('/pending', protect, hasPermission('viewReports'), async (req, res) =
   try {
     const ownerId = resolveShopOwnerId(req.user);
     const pending = await Sale.find({ owner: ownerId, paymentStatus: 'Pending' })
-      .populate('product', 'name category price')
+      .populate(salePopulateOptions)
       .sort({ date: -1 });
     const totalOwed = pending.reduce((sum, s) => sum + s.amountOwed, 0);
     res.json({ pending, totalOwed, count: pending.length });
@@ -42,7 +43,7 @@ router.get('/between', protect, hasPermission('viewReports'), async (req, res) =
 
     const ownerId = resolveShopOwnerId(req.user);
     const sales = await Sale.find({ owner: ownerId, date: { $gte: start, $lte: end } })
-      .populate('product', 'name category price');
+      .populate(salePopulateOptions);
     const totalRevenue = sales.filter((s) => s.paymentStatus === 'Paid' && !s.isReturned)
       .reduce((sum, s) => sum + s.totalPrice, 0);
     const totalPending = sales.filter((s) => s.paymentStatus === 'Pending')
@@ -55,4 +56,3 @@ router.get('/between', protect, hasPermission('viewReports'), async (req, res) =
 });
 
 module.exports = router;
-

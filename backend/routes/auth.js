@@ -27,6 +27,22 @@ const requirePrimarySupervisor = (req, res, next) => {
   return res.status(403).json({ message: 'Supervisor access only' });
 };
 
+const resolveShopOwnerId = (user) => user.shopOwner || user._id;
+
+const buildManagedUserQuery = (user, extra = {}) => {
+  const ownerId = resolveShopOwnerId(user);
+  if (isPrimarySupervisor(user)) {
+    return { shopOwner: ownerId, role: 'user', ...extra };
+  }
+  if (user?.role === 'admin') {
+    if (user.createdBy) {
+      return { shopOwner: ownerId, createdBy: user._id, role: 'user', ...extra };
+    }
+    return { shopOwner: ownerId, role: 'user', ...extra };
+  }
+  return { shopOwner: ownerId, createdBy: user._id, role: 'user', ...extra };
+};
+
 const buildManagedUserPermissions = (creator, overrides = {}) => {
   const defaults = buildDefaultPermissions('user');
   if (normalizeEmail(creator?.email) === IRADINE_EMAIL) {
@@ -264,8 +280,7 @@ router.put('/profile', protect, async (req, res) => {
 // @GET /api/auth/users
 router.get('/users', protect, hasPermission('manageUsers'), async (req, res) => {
   try {
-    const ownerId = req.user.shopOwner || req.user._id;
-    const users = await User.find({ shopOwner: ownerId }).select('-password').sort({ createdAt: -1 });
+    const users = await User.find(buildManagedUserQuery(req.user)).select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -320,8 +335,7 @@ router.patch('/users/:id/status', protect, hasPermission('manageUsers'), async (
   try {
     const { status } = req.body;
     if (!['Active', 'Inactive'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
-    const ownerId = req.user.shopOwner || req.user._id;
-    const target = await User.findOne({ _id: req.params.id, shopOwner: ownerId });
+    const target = await User.findOne(buildManagedUserQuery(req.user, { _id: req.params.id }));
     if (!target) return res.status(404).json({ message: 'User not found' });
     target.status = status;
     await target.save();
@@ -346,8 +360,7 @@ router.patch('/users/:id/status', protect, hasPermission('manageUsers'), async (
 // @PATCH /api/auth/users/:id
 router.patch('/users/:id', protect, hasPermission('manageUsers'), async (req, res) => {
   try {
-    const ownerId = req.user.shopOwner || req.user._id;
-    const target = await User.findOne({ _id: req.params.id, shopOwner: ownerId });
+    const target = await User.findOne(buildManagedUserQuery(req.user, { _id: req.params.id }));
     if (!target) return res.status(404).json({ message: 'User not found' });
 
     const { name, email, role, status, permissions, password } = req.body;
@@ -394,8 +407,7 @@ router.patch('/users/:id', protect, hasPermission('manageUsers'), async (req, re
 // @DELETE /api/auth/users/:id
 router.delete('/users/:id', protect, hasPermission('manageUsers'), async (req, res) => {
   try {
-    const ownerId = req.user.shopOwner || req.user._id;
-    const target = await User.findOne({ _id: req.params.id, shopOwner: ownerId });
+    const target = await User.findOne(buildManagedUserQuery(req.user, { _id: req.params.id }));
     if (!target) return res.status(404).json({ message: 'User not found' });
     if (String(target._id) === String(req.user._id)) {
       return res.status(400).json({ message: 'You cannot delete your own account' });

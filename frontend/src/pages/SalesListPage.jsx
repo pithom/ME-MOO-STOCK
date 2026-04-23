@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { salesAPI } from '../services/api';
 import { format } from 'date-fns';
+import { getSaleProductDetails, getSaleProductLabel, getSaleQuantity, getSaleSearchText } from '../utils/sales';
 
 export default function SalesListPage() {
   const [sales, setSales] = useState([]);
@@ -14,11 +15,16 @@ export default function SalesListPage() {
     try {
       const { data } = await salesAPI.getAll();
       setSales(data);
-    } catch { toast.error('Failed to load sales'); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error('Failed to load sales');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchSales(); }, []);
+  useEffect(() => {
+    fetchSales();
+  }, []);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this sale? Stock will be restored.')) return;
@@ -56,38 +62,34 @@ export default function SalesListPage() {
     }
   };
 
-  const filtered = sales.filter(s =>
-    s.product?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    s.customerName?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid' && !s.isReturned).reduce((sum, s) => sum + s.totalPrice, 0);
-  const totalPending = sales.filter(s => s.paymentStatus === 'Pending').reduce((sum, s) => sum + s.amountOwed, 0);
+  const filtered = sales.filter((sale) => getSaleSearchText(sale).includes(search.toLowerCase()));
+  const totalRevenue = sales.filter((sale) => sale.paymentStatus === 'Paid' && !sale.isReturned).reduce((sum, sale) => sum + sale.totalPrice, 0);
+  const totalPending = sales.filter((sale) => sale.paymentStatus === 'Pending').reduce((sum, sale) => sum + sale.amountOwed, 0);
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">📋 Sales History</h1>
+        <h1 className="page-title">Sales History</h1>
         <p className="page-subtitle">View all recorded transactions</p>
       </div>
 
       <div className="stats-grid" style={{ marginBottom: 20 }}>
         <div className="stat-card">
-          <div className="stat-icon green">🛒</div>
+          <div className="stat-icon green">Sale</div>
           <div>
             <div className="stat-value">{sales.length}</div>
             <div className="stat-label">Total Transactions</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon green">💰</div>
+          <div className="stat-icon green">Cash</div>
           <div>
             <div className="stat-value">RWF {totalRevenue.toLocaleString()}</div>
             <div className="stat-label">Revenue Collected</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon orange">⏳</div>
+          <div className="stat-icon orange">Due</div>
           <div>
             <div className="stat-value">RWF {totalPending.toLocaleString()}</div>
             <div className="stat-label">Amount Pending</div>
@@ -97,8 +99,13 @@ export default function SalesListPage() {
 
       <div className="topbar">
         <div className="search-bar" style={{ flex: 1, maxWidth: 340 }}>
-          <span className="search-icon">🔍</span>
-          <input className="form-control" placeholder="Search by product or customer..." value={search} onChange={e => setSearch(e.target.value)} />
+          <span className="search-icon">Search</span>
+          <input
+            className="form-control"
+            placeholder="Search by product or customer..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </div>
 
@@ -107,7 +114,7 @@ export default function SalesListPage() {
           <div className="page-loader"><div className="spinner" style={{ width: 36, height: 36 }}></div></div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🛒</div>
+            <div className="empty-icon">Sale</div>
             <h3>No sales recorded</h3>
             <p>Create your first sale to see it here</p>
           </div>
@@ -117,7 +124,7 @@ export default function SalesListPage() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Product</th>
+                  <th>Products</th>
                   <th>Qty</th>
                   <th>Total (RWF)</th>
                   <th>Payment</th>
@@ -130,46 +137,51 @@ export default function SalesListPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s, i) => (
-                  <tr key={s._id}>
+                {filtered.map((sale, i) => (
+                  <tr key={sale._id}>
                     <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                    <td><strong>{s.product?.name}</strong></td>
-                    <td>{s.quantity}</td>
-                    <td style={{ fontWeight: 700, color: s.paymentStatus === 'Paid' ? '#10b981' : '#f59e0b' }}>
-                      {s.totalPrice.toLocaleString()}
+                    <td>
+                      <strong>{getSaleProductLabel(sale)}</strong>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                        {getSaleProductDetails(sale)}
+                      </div>
+                    </td>
+                    <td>{getSaleQuantity(sale)}</td>
+                    <td style={{ fontWeight: 700, color: sale.paymentStatus === 'Paid' ? '#10b981' : '#f59e0b' }}>
+                      {sale.totalPrice.toLocaleString()}
                     </td>
                     <td>
-                      <span className={`badge ${s.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}`}>
-                        {s.paymentStatus === 'Paid' ? '✅ Paid' : '⏳ Pending'}
+                      <span className={`badge ${sale.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}`}>
+                        {sale.paymentStatus === 'Paid' ? 'Paid' : 'Pending'}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-muted)' }}>{s.paymentType || 'Cash'}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{s.customerName || '—'}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{s.customerPhone || '—'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{sale.paymentType || 'Cash'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{sale.customerName || '-'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{sale.customerPhone || '-'}</td>
                     <td>
-                      {s.isReturned ? (
-                        <span className="badge badge-low">↩ {s.returnMethod || 'Returned'}</span>
+                      {sale.isReturned ? (
+                        <span className="badge badge-low">Return: {sale.returnMethod || 'Returned'}</span>
                       ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        <span style={{ color: 'var(--text-muted)' }}>-</span>
                       )}
                     </td>
-                    <td style={{ color: 'var(--text-muted)' }}>{format(new Date(s.date), 'dd MMM yyyy')}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{format(new Date(sale.date), 'dd MMM yyyy')}</td>
                     <td>
                       <div className="table-action-group" style={{ display: 'flex', gap: 8 }}>
                         <button
                           className="btn btn-ghost btn-sm"
-                          onClick={() => handleReturn(s)}
-                          disabled={returning === s._id || s.isReturned}
-                          title={s.isReturned ? 'Already returned' : 'Return product and restore stock'}
+                          onClick={() => handleReturn(sale)}
+                          disabled={returning === sale._id || sale.isReturned}
+                          title={sale.isReturned ? 'Already returned' : 'Return product and restore stock'}
                         >
-                          {returning === s._id ? '...' : s.isReturned ? '↩ Returned' : '↩ Return'}
+                          {returning === sale._id ? '...' : sale.isReturned ? 'Returned' : 'Return'}
                         </button>
                         <button
                           className="btn btn-danger btn-sm"
-                          onClick={() => handleDelete(s._id)}
-                          disabled={deleting === s._id}
+                          onClick={() => handleDelete(sale._id)}
+                          disabled={deleting === sale._id}
                         >
-                          {deleting === s._id ? '...' : '🗑️ Delete'}
+                          {deleting === sale._id ? '...' : 'Delete'}
                         </button>
                       </div>
                     </td>
