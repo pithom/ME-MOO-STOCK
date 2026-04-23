@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
+import logoImage from '../assets/images/me-moo-logo-pro.png';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -24,7 +25,7 @@ export default function ForgotPasswordPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-circle">🔑</div>
+          <img src={logoImage} alt="ME-MOO STOCK Logo" className="auth-brand-logo auth-brand-logo-compact" />
           <h1>Forgot Password</h1>
           <p>Enter your admin email to reset password</p>
         </div>
@@ -53,4 +54,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-

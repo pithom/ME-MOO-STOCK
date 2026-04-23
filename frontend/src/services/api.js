@@ -5,12 +5,14 @@ import {
   runOrQueueMutation,
   processSyncQueue,
 } from './offlineSync';
+import { clearStoredAuthUser, getStoredAuthUser } from '../utils/authStorage';
 
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL });
+const baseURL = import.meta.env.DEV ? '/api' : import.meta.env.VITE_API_URL;
+const API = axios.create({ baseURL });
 initOfflineSync(API);
 
 API.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem('stockUser') || '{}');
+  const user = getStoredAuthUser() || {};
   if (user?.token) config.headers.Authorization = `Bearer ${user.token}`;
   return config;
 });
@@ -19,7 +21,7 @@ API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
-      localStorage.removeItem('stockUser');
+      clearStoredAuthUser();
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth:session-expired'));
       }
@@ -124,4 +126,3 @@ export const activityLogAPI = {
 };
 
 export default API;
-

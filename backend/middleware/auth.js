@@ -31,6 +31,14 @@ const hasPermission = (permissionKey) => (req, res, next) => {
   return res.status(403).json({ message: `Missing permission: ${permissionKey}` });
 };
 
+const hasAnyPermission = (permissionKeys) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ message: 'Not authorized' });
+  if (req.user.role === 'admin') return next();
+  if (req.user.status !== 'Active') return res.status(403).json({ message: 'Account is inactive' });
+  if (permissionKeys.some((permissionKey) => req.user.permissions?.[permissionKey])) return next();
+  return res.status(403).json({ message: `Missing one of permissions: ${permissionKeys.join(', ')}` });
+};
+
 const adminOrSupervisor = (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not authorized' });
   if (req.user.role === 'admin') return next();
@@ -43,4 +51,4 @@ const supervisorOnly = (req, res, next) => {
   return res.status(403).json({ message: 'Supervisor access only' });
 };
 
-module.exports = { protect, adminOnly, hasPermission, adminOrSupervisor, supervisorOnly };
+module.exports = { protect, adminOnly, hasPermission, hasAnyPermission, adminOrSupervisor, supervisorOnly };

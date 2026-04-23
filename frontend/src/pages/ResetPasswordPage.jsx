@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import logoImage from '../assets/images/me-moo-logo-pro.png';
 import { authAPI } from '../services/api';
 
 export default function ResetPasswordPage() {
@@ -36,7 +37,7 @@ export default function ResetPasswordPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-circle">✅</div>
+          <img src={logoImage} alt="ME-MOO STOCK Logo" className="auth-brand-logo auth-brand-logo-compact" />
           <h1>Reset Password</h1>
           <p>Set a new password for your account</p>
         </div>
@@ -47,7 +48,7 @@ export default function ResetPasswordPage() {
               <input
                 className="form-control"
                 type="password"
-                placeholder="••••••••"
+                placeholder="********"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -58,7 +59,7 @@ export default function ResetPasswordPage() {
               <input
                 className="form-control"
                 type="password"
-                placeholder="••••••••"
+                placeholder="********"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -76,4 +77,3 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-

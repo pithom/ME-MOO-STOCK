@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import { authAPI, productsAPI, activityLogAPI } from '../services/api';
 
 const buildDefaultManagedUserPermissions = (email = '') => {
@@ -63,6 +63,13 @@ export default function AdminSettingsPage() {
   const [newAdminForm, setNewAdminForm] = useState({ name: '', email: '', password: '', status: 'Active' });
   const [pwdModal, setPwdModal] = useState(null); // admin object
   const [newAdminPwd, setNewAdminPwd] = useState('');
+  const [permissionModal, setPermissionModal] = useState(null);
+  const getPermissionSummary = (permissions = {}) => (
+    permissionEntries
+      .filter(([key]) => Boolean(permissions?.[key]))
+      .map(([, label]) => label)
+      .join(', ') || 'No permissions'
+  );
 
   const fetchUsers = async () => {
     if (!canManageUsers) return;
@@ -251,27 +258,25 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const editUserPermissions = async (targetUser) => {
-    const currentEnabled = permissionEntries
-      .filter(([key]) => Boolean(targetUser.permissions?.[key]))
-      .map(([, label]) => label);
-    const raw = window.prompt(
-      'Enter permissions separated by comma.\nAvailable: New Sale, Sales History, Pay Pending, Reports, Add Products, Edit Products, Delete Products, Manage Users',
-      currentEnabled.join(', ')
-    );
-    if (raw == null) return;
+  const editUserPermissions = (targetUser) => {
+    setPermissionModal({
+      _id: targetUser._id,
+      name: targetUser.name,
+      email: targetUser.email,
+      permissions: permissionEntries.reduce((acc, [key]) => {
+        acc[key] = Boolean(targetUser.permissions?.[key]);
+        return acc;
+      }, {}),
+    });
+  };
 
-    const selected = new Set(
-      raw.split(',').map((v) => v.trim().toLowerCase()).filter(Boolean)
-    );
-    const nextPermissions = permissionEntries.reduce((acc, [key, label]) => {
-      acc[key] = selected.has(label.toLowerCase());
-      return acc;
-    }, {});
-
+  const saveUserPermissions = async (e) => {
+    e.preventDefault();
+    if (!permissionModal) return;
     try {
-      const { data } = await authAPI.updateUser(targetUser._id, { permissions: nextPermissions });
-      setUsers((prev) => prev.map((u) => (u._id === targetUser._id ? data : u)));
+      const { data } = await authAPI.updateUser(permissionModal._id, { permissions: permissionModal.permissions });
+      setUsers((prev) => prev.map((u) => (u._id === permissionModal._id ? data : u)));
+      setPermissionModal(null);
       toast.success('Permissions updated');
       fetchLogs();
     } catch (err) {
@@ -413,6 +418,9 @@ export default function AdminSettingsPage() {
       {isAdmin && (
         <div className="card" style={{ marginTop: 20 }}>
           <h2 style={{ fontSize: 18, marginBottom: 16 }}>User Management</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: 13 }}>
+            Users listed here belong to this admin account. Use "Edit Permissions" to choose exactly what each user can access.
+          </p>
           <form onSubmit={onCreateUser}>
             <div className="grid-2">
               <div className="form-group">
@@ -484,10 +492,7 @@ export default function AdminSettingsPage() {
                         </td>
                         <td>{u.status}</td>
                         <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                          {Object.entries(u.permissions || {})
-                            .filter(([, v]) => Boolean(v))
-                            .map(([k]) => k)
-                            .join(', ') || 'none'}
+                          {getPermissionSummary(u.permissions)}
                         </td>
                         <td>
                           <div className="table-action-group" style={{ display: 'flex', gap: 8 }}>
@@ -498,7 +503,7 @@ export default function AdminSettingsPage() {
                               Change Password
                             </button>
                             <button className="btn btn-ghost btn-sm" onClick={() => editUserPermissions(u)} type="button">
-                              Permissions
+                              Edit Permissions
                             </button>
                             <button className="btn btn-danger btn-sm" onClick={() => deleteUser(u)} type="button">Delete</button>
                           </div>
@@ -616,8 +621,8 @@ export default function AdminSettingsPage() {
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
             {isSupervisor
-              ? 'Actions performed by you and by the admin accounts you manage.'
-              : 'Actions you performed on user accounts.'}
+              ? 'Actions performed by you, your admins, and their managed users.'
+              : 'Actions performed by you and by the users you created.'}
           </p>
           {logsLoading ? (
             <div className="page-loader"><div className="spinner" style={{ width: 28, height: 28 }} /></div>
@@ -629,9 +634,10 @@ export default function AdminSettingsPage() {
                 <thead>
                   <tr>
                     <th>Date &amp; Time</th>
+                    <th>By</th>
                     <th>Action</th>
-                    <th>Account Name</th>
-                    <th>Email</th>
+                    <th>Target</th>
+                    <th>Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -644,16 +650,27 @@ export default function AdminSettingsPage() {
                       permissions_updated: { label: '⚙️ Permissions Updated', color: '#6366f1' },
                       deleted:             { label: '🗑️ Deleted',             color: '#ef4444' },
                     }[log.action] || { label: log.action, color: 'var(--text-muted)' };
+                    const displayActionMeta = {
+                      sale_created: { label: 'Sale Created', color: '#0ea5e9' },
+                      sale_paid: { label: 'Sale Paid', color: '#10b981' },
+                      sale_returned: { label: 'Sale Returned', color: '#f59e0b' },
+                      sale_deleted: { label: 'Sale Deleted', color: '#ef4444' },
+                      product_created: { label: 'Product Added', color: '#10b981' },
+                      product_updated: { label: 'Product Edited', color: '#6366f1' },
+                      product_deleted: { label: 'Product Deleted', color: '#ef4444' },
+                      stock_added: { label: 'Stock Added', color: '#14b8a6' },
+                    }[log.action] || actionMeta;
                     return (
                       <tr key={log._id}>
                         <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{new Date(log.createdAt).toLocaleString()}</td>
+                        <td>{log.performedByName || '-'}</td>
                         <td>
-                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: `${actionMeta.color}20`, color: actionMeta.color }}>
-                            {actionMeta.label}
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: `${displayActionMeta.color}20`, color: displayActionMeta.color }}>
+                            {displayActionMeta.label}
                           </span>
                         </td>
-                        <td>{log.targetUserName || '—'}</td>
-                        <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{log.targetUserEmail || '—'}</td>
+                        <td>{log.targetUserName || '-'}</td>
+                        <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{log.details || log.targetUserEmail || '-'}</td>
                       </tr>
                     );
                   })}
@@ -688,6 +705,60 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       )}
+
+      {permissionModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
+          <div className="card" style={{ width: '100%', maxWidth: 520, margin: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h2 style={{ fontSize: 18, margin: 0 }}>Edit User Permissions</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '6px 0 0' }}>
+                  {permissionModal.name} ({permissionModal.email})
+                </p>
+              </div>
+              <button className="btn btn-ghost btn-sm" type="button" onClick={() => setPermissionModal(null)}>Close</button>
+            </div>
+            <form onSubmit={saveUserPermissions}>
+              <div className="grid-2">
+                {permissionEntries.map(([key, label]) => (
+                  <label
+                    key={key}
+                    style={{
+                      display: 'flex',
+                      gap: 10,
+                      alignItems: 'center',
+                      padding: '12px 14px',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 12,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(permissionModal.permissions?.[key])}
+                      onChange={(e) => setPermissionModal((prev) => ({
+                        ...prev,
+                        permissions: {
+                          ...prev.permissions,
+                          [key]: e.target.checked,
+                        },
+                      }))}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 16, marginBottom: 0 }}>
+                Turn permissions on or off, then click Save Permissions to apply the changes for this user.
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setPermissionModal(null)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Permissions</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

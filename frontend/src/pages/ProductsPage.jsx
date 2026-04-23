@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { productsAPI } from '../services/api';
 import QRCode from 'qrcode';
-import { useAuth } from '../context/useAuth';
+import { productsAPI } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 const EMPTY_FORM = { name: '', category: '', price: '', quantity: '', description: '', barcode: '', qrCode: '' };
 
@@ -17,32 +17,45 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState(null);
   const lowStockThreshold = Number(localStorage.getItem('lowStockThreshold') || 5);
-  const canAddProducts = Boolean(user?.role === 'admin' || user?.permissions?.addProducts);
-  const canEditProducts = Boolean(user?.role === 'admin' || user?.permissions?.editProducts);
-  const canDeleteProducts = Boolean(user?.role === 'admin' || user?.permissions?.deleteProducts);
+  const canManageInventoryPage = Boolean(
+    user?.role === 'admin'
+    || user?.permissions?.addProducts
+    || user?.permissions?.editProducts
+    || user?.permissions?.deleteProducts
+  );
 
   const fetchProducts = async () => {
     try {
       const { data } = await productsAPI.getAll();
       setProducts(data);
-    } catch { toast.error('Failed to load products'); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const openAdd = () => { setForm(EMPTY_FORM); setEditId(null); setShowModal(true); };
-  const openEdit = (p) => {
+  const openAdd = () => {
+    setForm(EMPTY_FORM);
+    setEditId(null);
+    setShowModal(true);
+  };
+
+  const openEdit = (product) => {
     setForm({
-      name: p.name,
-      category: p.category,
-      price: p.price,
-      quantity: p.quantity,
-      description: p.description || '',
-      barcode: p.barcode || '',
-      qrCode: p.qrCode || '',
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      quantity: product.quantity,
+      description: product.description || '',
+      barcode: product.barcode || '',
+      qrCode: product.qrCode || '',
     });
-    setEditId(p._id);
+    setEditId(product._id);
     setShowModal(true);
   };
 
@@ -58,7 +71,7 @@ export default function ProductsPage() {
       price: form.price,
     });
     const dataUrl = await QRCode.toDataURL(qrPayload);
-    setForm(prev => ({ ...prev, qrCode: dataUrl }));
+    setForm((prev) => ({ ...prev, qrCode: dataUrl }));
     toast.success('QR generated');
   };
 
@@ -67,7 +80,7 @@ export default function ProductsPage() {
     setSaving(true);
     try {
       if (editId) {
-        const current = products.find((p) => p._id === editId);
+        const current = products.find((product) => product._id === editId);
         await productsAPI.update(editId, { ...form, expectedUpdatedAt: current?.updatedAt });
         toast.success('Product updated!');
       } else {
@@ -76,40 +89,46 @@ export default function ProductsPage() {
       }
       setShowModal(false);
       fetchProducts();
-    } catch (err) { toast.error(err.response?.data?.message || 'Error saving product'); }
-    finally { setSaving(false); }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error saving product');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this product?')) return;
     setDeleting(id);
     try {
-      const current = products.find((p) => p._id === id);
+      const current = products.find((product) => product._id === id);
       await productsAPI.delete(id, { expectedUpdatedAt: current?.updatedAt });
       toast.success('Product deleted');
       fetchProducts();
-    } catch { toast.error('Failed to delete'); }
-    finally { setDeleting(null); }
+    } catch {
+      toast.error('Failed to delete');
+    } finally {
+      setDeleting(null);
+    }
   };
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
+  const filtered = products.filter((product) =>
+    product.name.toLowerCase().includes(search.toLowerCase())
+    || product.category.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">📦 Products</h1>
+        <h1 className="page-title">Products</h1>
         <p className="page-subtitle">Manage your product inventory</p>
       </div>
 
       <div className="topbar">
         <div className="search-bar" style={{ flex: 1, maxWidth: 340 }}>
-          <span className="search-icon">🔍</span>
-          <input className="form-control" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} />
+          <span className="search-icon">Search</span>
+          <input className="form-control" placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        {canAddProducts && <button className="btn btn-primary" onClick={openAdd}>＋ Add Product</button>}
+        {canManageInventoryPage && <button className="btn btn-primary" onClick={openAdd}>Add Product</button>}
       </div>
 
       <div className="card" style={{ padding: 0 }}>
@@ -117,7 +136,7 @@ export default function ProductsPage() {
           <div className="page-loader"><div className="spinner" style={{ width: 36, height: 36 }}></div></div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📦</div>
+            <div className="empty-icon">Box</div>
             <h3>No products found</h3>
             <p>Add your first product to get started</p>
           </div>
@@ -137,25 +156,25 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, i) => (
-                  <tr key={p._id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                    <td><strong>{p.name}</strong></td>
-                    <td><span className="badge badge-user">{p.category}</span></td>
-                    <td style={{ color: '#10b981', fontWeight: 600 }}>{Number(p.price).toLocaleString()}</td>
-                    <td><strong>{Number(p.quantity) || 0}</strong></td>
+                {filtered.map((product, index) => (
+                  <tr key={product._id}>
+                    <td style={{ color: 'var(--text-muted)' }}>{index + 1}</td>
+                    <td><strong>{product.name}</strong></td>
+                    <td><span className="badge badge-user">{product.category}</span></td>
+                    <td style={{ color: '#10b981', fontWeight: 600 }}>{Number(product.price).toLocaleString()}</td>
+                    <td><strong>{Number(product.quantity) || 0}</strong></td>
                     <td>
-                      <span className={`badge ${(Number(p.quantity) || 0) <= lowStockThreshold ? 'badge-pending' : 'badge-paid'}`}>
-                        {(Number(p.quantity) || 0) <= lowStockThreshold ? '🟡 Low Stock' : '🟢 In Stock'}
+                      <span className={`badge ${(Number(product.quantity) || 0) <= lowStockThreshold ? 'badge-pending' : 'badge-paid'}`}>
+                        {(Number(product.quantity) || 0) <= lowStockThreshold ? 'Low Stock' : 'In Stock'}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-muted)' }}>{p.barcode || '—'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{product.barcode || '-'}</td>
                     <td>
                       <div className="table-action-group" style={{ display: 'flex', gap: 8 }}>
-                        {canEditProducts && <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>}
-                        {canDeleteProducts && (
-                          <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)} disabled={deleting === p._id}>
-                            {deleting === p._id ? '...' : '🗑️ Delete'}
+                        {canManageInventoryPage && <button className="btn btn-ghost btn-sm" onClick={() => openEdit(product)}>Edit</button>}
+                        {canManageInventoryPage && (
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDelete(product._id)} disabled={deleting === product._id}>
+                            {deleting === product._id ? '...' : 'Delete'}
                           </button>
                         )}
                       </div>
@@ -169,39 +188,39 @@ export default function ProductsPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">{editId ? '✏️ Edit Product' : '➕ Add Product'}</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+              <h2 className="modal-title">{editId ? 'Edit Product' : 'Add Product'}</h2>
+              <button className="modal-close" onClick={() => setShowModal(false)}>x</button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Product Name</label>
-                <input className="form-control" placeholder="e.g. Coca Cola 500ml" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                <input className="form-control" placeholder="e.g. Coca Cola 500ml" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Category</label>
-                  <input className="form-control" placeholder="e.g. Beverages" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} required />
+                  <input className="form-control" placeholder="e.g. Beverages" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Price (RWF)</label>
-                  <input className="form-control" type="number" placeholder="0" min="0" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
+                  <input className="form-control" type="number" placeholder="0" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Initial Quantity</label>
-                <input className="form-control" type="number" placeholder="0" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
+                <input className="form-control" type="number" placeholder="0" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Description (optional)</label>
-                <input className="form-control" placeholder="Short description..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                <input className="form-control" placeholder="Short description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Barcode (optional)</label>
-                  <input className="form-control" placeholder="e.g. 123456789012" value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} />
+                  <input className="form-control" placeholder="e.g. 123456789012" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">QR Code</label>
@@ -216,7 +235,7 @@ export default function ProductsPage() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? <><span className="spinner"></span> Saving...</> : editId ? '✔ Update' : '✔ Add Product'}
+                  {saving ? <><span className="spinner"></span> Saving...</> : editId ? 'Update' : 'Add Product'}
                 </button>
               </div>
             </form>

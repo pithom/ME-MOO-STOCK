@@ -1,21 +1,23 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Toaster } from 'react-hot-toast';
+import { Menu, Moon, SunMedium } from 'lucide-react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import brandLogo from './assets/images/me-moo-logo-pro.png';
 import { AuthProvider } from './context/AuthProvider';
-import { useAuth } from './context/useAuth';
 import { ThemeProvider } from './context/ThemeProvider';
-import { useTheme } from './context/useTheme';
-import Sidebar from './components/Sidebar';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import ProductsPage from './pages/ProductsPage';
-import StockInPage from './pages/StockInPage';
-import SalesPage from './pages/SalesPage';
-import SalesListPage from './pages/SalesListPage';
-import PendingPage from './pages/PendingPage';
-import ReportsPage from './pages/ReportsPage';
+import { useAuth } from './hooks/useAuth';
+import { useTheme } from './hooks/useTheme';
+import Sidebar from './layout/Sidebar';
 import AdminSettingsPage from './pages/AdminSettingsPage';
+import DashboardPage from './pages/DashboardPage';
+import LoginPage from './pages/LoginPage';
+import PendingPage from './pages/PendingPage';
+import ProductsPage from './pages/ProductsPage';
+import ReportsPage from './pages/ReportsPage';
+import SalesListPage from './pages/SalesListPage';
+import SalesPage from './pages/SalesPage';
+import StockInPage from './pages/StockInPage';
 
 const ProtectedLayout = ({ children }) => {
   const { user, authReady } = useAuth();
@@ -24,10 +26,14 @@ const ProtectedLayout = ({ children }) => {
 
   const mobileHeader = (
     <header className="mobile-header">
-      <button className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(true)}>☰ Menu</button>
-      <div className="mobile-title">ME-MOO STOCK</div>
-      <button className="btn btn-ghost btn-sm" onClick={toggleTheme}>
-        {theme === 'dark' ? '🌙' : '☀️'}
+      <button className="btn btn-ghost btn-sm mobile-header-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+        <Menu size={18} />
+      </button>
+      <div className="mobile-brand">
+        <img src={brandLogo} alt="ME-MOO STOCK" className="mobile-brand-logo" />
+      </div>
+      <button className="btn btn-ghost btn-sm mobile-header-btn" onClick={toggleTheme} aria-label="Toggle theme">
+        {theme === 'dark' ? <Moon size={18} /> : <SunMedium size={18} />}
       </button>
     </header>
   );
@@ -53,8 +59,8 @@ const ProtectedLayout = ({ children }) => {
     <>
       {typeof document !== 'undefined' ? createPortal(mobileHeader, document.body) : mobileHeader}
       <div className="layout has-mobile-header">
-      <Sidebar isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <main className="main-content">{children}</main>
+        <Sidebar isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
+        <main className="main-content">{children}</main>
       </div>
     </>
   );
@@ -86,8 +92,6 @@ function AppRoutes() {
   const canViewPendingPayments = Boolean(user?.permissions?.viewPendingPayments);
   const canManageUsers = Boolean(user?.role === 'admin' || user?.permissions?.manageUsers);
 
-  // Default landing page for a user-role account; prevents redirect loops for
-  // supervisor accounts (manageUsers only, no sales/inventory permissions).
   const userHome = canCreateSale ? '/sales' : canManageUsers ? '/settings' : '/sales-list';
 
   return (
@@ -105,7 +109,6 @@ function AppRoutes() {
     </Routes>
   );
 }
-
 
 function AppShell() {
   const { theme } = useTheme();

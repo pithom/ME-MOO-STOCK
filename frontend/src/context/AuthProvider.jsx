@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react';
 import { authAPI } from '../services/api';
 import { AuthContext } from './authContext';
+import {
+  clearStoredAuthUser,
+  getStoredAuthUser,
+  setStoredAuthUser,
+} from '../utils/authStorage';
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('stockUser');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      localStorage.removeItem('stockUser');
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() => getStoredAuthUser());
   const [loading, setLoading] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
@@ -19,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await authAPI.login({ email: String(email).trim(), password: String(password) });
-      localStorage.setItem('stockUser', JSON.stringify(data));
+      setStoredAuthUser(data);
       setUser(data);
       return { success: true };
     } catch (err) {
@@ -48,7 +45,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('stockUser');
+    clearStoredAuthUser();
     setUser(null);
   };
 
@@ -56,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await authAPI.updateProfile(payload);
-      localStorage.setItem('stockUser', JSON.stringify(data));
+      setStoredAuthUser(data);
       setUser(data);
       return { success: true };
     } catch (err) {
@@ -77,7 +74,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data } = await authAPI.me();
         const nextUser = { ...user, ...data };
-        localStorage.setItem('stockUser', JSON.stringify(nextUser));
+        setStoredAuthUser(nextUser);
         if (!cancelled) setUser(nextUser);
       } catch {
         if (!cancelled) logout();
@@ -103,4 +100,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

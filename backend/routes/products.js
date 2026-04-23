@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const { protect, hasPermission, adminOnly } = require('../middleware/auth');
+const ActivityLog = require('../models/ActivityLog');
+const { protect, hasAnyPermission, adminOnly } = require('../middleware/auth');
 const resolveShopOwnerId = (user) => user.shopOwner || user._id;
+const hasInventoryPageAccess = hasAnyPermission(['addProducts', 'editProducts', 'deleteProducts']);
 
 // GET all products
 router.get('/', protect, async (req, res) => {
@@ -24,7 +26,7 @@ router.get('/:id', protect, async (req, res) => {
 });
 
 // POST create product
-router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
+router.post('/', protect, hasInventoryPageAccess, async (req, res) => {
   try {
     const { name, category, price, quantity, description, barcode, qrCode } = req.body;
     if (!name || !category || price == null) return res.status(400).json({ message: 'Name, category, price are required' });
@@ -39,6 +41,15 @@ router.post('/', protect, hasPermission('addProducts'), async (req, res) => {
       description,
       barcode: barcode || '',
       qrCode: qrCode || '',
+    });
+    await ActivityLog.create({
+      performedBy: req.user._id,
+      performedByName: req.user.name,
+      action: 'product_created',
+      targetType: 'product',
+      targetUserId: product._id,
+      targetUserName: product.name,
+      details: `Category: ${product.category}`,
     });
     res.status(201).json(product);
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -93,7 +104,7 @@ router.post('/import-bulk', protect, adminOnly, async (req, res) => {
 });
 
 // PUT update product
-router.put('/:id', protect, hasPermission('editProducts'), async (req, res) => {
+router.put('/:id', protect, hasInventoryPageAccess, async (req, res) => {
   try {
     const ownerId = resolveShopOwnerId(req.user);
     const { expectedUpdatedAt, ...updatePayload } = req.body;
@@ -113,12 +124,21 @@ router.put('/:id', protect, hasPermission('editProducts'), async (req, res) => {
       { new: true, runValidators: true }
     );
     if (!product) return res.status(404).json({ message: 'Product not found' });
+    await ActivityLog.create({
+      performedBy: req.user._id,
+      performedByName: req.user.name,
+      action: 'product_updated',
+      targetType: 'product',
+      targetUserId: product._id,
+      targetUserName: product.name,
+      details: `Category: ${product.category}`,
+    });
     res.json(product);
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 // DELETE product
-router.delete('/:id', protect, hasPermission('deleteProducts'), async (req, res) => {
+router.delete('/:id', protect, hasInventoryPageAccess, async (req, res) => {
   try {
     const ownerId = resolveShopOwnerId(req.user);
     const expectedUpdatedAt = req.body?.expectedUpdatedAt;
@@ -134,9 +154,17 @@ router.delete('/:id', protect, hasPermission('deleteProducts'), async (req, res)
 
     const product = await Product.findOneAndDelete({ _id: req.params.id, owner: ownerId });
     if (!product) return res.status(404).json({ message: 'Product not found' });
+    await ActivityLog.create({
+      performedBy: req.user._id,
+      performedByName: req.user.name,
+      action: 'product_deleted',
+      targetType: 'product',
+      targetUserId: product._id,
+      targetUserName: product.name,
+      details: `Category: ${product.category}`,
+    });
     res.json({ message: 'Product deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 module.exports = router;
-
