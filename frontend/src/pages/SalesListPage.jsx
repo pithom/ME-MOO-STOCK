@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { salesAPI } from '../services/api';
 import { format } from 'date-fns';
+import { Search } from 'lucide-react';
 import { getSaleProductDetails, getSaleProductLabel, getSaleQuantity, getSaleSearchText } from '../utils/sales';
 
 export default function SalesListPage() {
@@ -99,7 +100,9 @@ export default function SalesListPage() {
 
       <div className="topbar">
         <div className="search-bar" style={{ flex: 1, maxWidth: 340 }}>
-          <span className="search-icon">Search</span>
+          <span className="search-icon" aria-hidden="true">
+            <Search size={16} strokeWidth={2} />
+          </span>
           <input
             className="form-control"
             placeholder="Search by product or customer..."

@@ -16,6 +16,36 @@ const EMPTY_ITEM = {
   unitPrice: '',
 };
 
+const SAVED_CUSTOMERS_KEY = 'stockSavedCustomers';
+const AUTO_SAVE_CUSTOMERS_KEY = 'stockAutoSaveCustomers';
+const MAX_SAVED_CUSTOMERS = 200;
+
+const normalizeCustomerName = (value = '') => value.trim().replace(/\s+/g, ' ').toLowerCase();
+const normalizeCustomerPhone = (value = '') => value.replace(/\D+/g, '');
+
+const readSavedCustomers = () => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = localStorage.getItem(SAVED_CUSTOMERS_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((entry) => ({
+        name: String(entry?.name || '').trim(),
+        phone: String(entry?.phone || '').trim(),
+        lastUsedAt: entry?.lastUsedAt || new Date(0).toISOString(),
+      }))
+      .filter((entry) => entry.name && entry.phone)
+      .sort((a, b) => new Date(b.lastUsedAt).getTime() - new Date(a.lastUsedAt).getTime());
+  } catch {
+    return [];
+  }
+};
+
 export default function SalesPage() {
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -24,6 +54,10 @@ export default function SalesPage() {
   const [saving, setSaving] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [savedCustomers, setSavedCustomers] = useState(() => readSavedCustomers());
+  const [autoSaveCustomer, setAutoSaveCustomer] = useState(() => (
+    typeof window === 'undefined' || localStorage.getItem(AUTO_SAVE_CUSTOMERS_KEY) !== 'false'
+  ));
 
   useEffect(() => {
     productsAPI.getAll()
@@ -32,6 +66,11 @@ export default function SalesPage() {
 
     getQueueSummary().then((summary) => setPendingSyncCount(summary.queued)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(AUTO_SAVE_CUSTOMERS_KEY, String(autoSaveCustomer));
+  }, [autoSaveCustomer]);
 
   const handleProductChange = (e) => {
     const id = e.target.value;
@@ -98,6 +137,80 @@ export default function SalesPage() {
     setCartItems((prev) => prev.filter((item) => item.productId !== productId));
   };
 
+  const findSavedCustomerByName = (name) => {
+    const normalizedName = normalizeCustomerName(name);
+    if (!normalizedName) return null;
+    return savedCustomers.find((entry) => normalizeCustomerName(entry.name) === normalizedName) || null;
+  };
+
+  const findSavedCustomerByPhone = (phone) => {
+    const normalizedPhone = normalizeCustomerPhone(phone);
+    if (!normalizedPhone) return null;
+    return savedCustomers.find((entry) => normalizeCustomerPhone(entry.phone) === normalizedPhone) || null;
+  };
+
+  const saveCustomerLocally = (name, phone) => {
+    if (!autoSaveCustomer) return;
+
+    const cleanName = name.trim();
+    const cleanPhone = phone.trim();
+    const normalizedName = normalizeCustomerName(cleanName);
+    const normalizedPhone = normalizeCustomerPhone(cleanPhone);
+    if (!normalizedName || !normalizedPhone) return;
+
+    setSavedCustomers((prev) => {
+      const now = new Date().toISOString();
+      const existingIndex = prev.findIndex((entry) => {
+        const entryPhone = normalizeCustomerPhone(entry.phone);
+        if (entryPhone) return entryPhone === normalizedPhone;
+        return normalizeCustomerName(entry.name) === normalizedName;
+      });
+
+      const merged = existingIndex >= 0
+        ? prev.map((entry, index) => (
+          index === existingIndex
+            ? { ...entry, name: cleanName, phone: cleanPhone, lastUsedAt: now }
+            : entry
+        ))
+        : [{ name: cleanName, phone: cleanPhone, lastUsedAt: now }, ...prev];
+
+      const next = merged
+        .sort((a, b) => new Date(b.lastUsedAt).getTime() - new Date(a.lastUsedAt).getTime())
+        .slice(0, MAX_SAVED_CUSTOMERS);
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SAVED_CUSTOMERS_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const handleCustomerNameChange = (e) => {
+    const customerName = e.target.value;
+    const existingCustomer = findSavedCustomerByName(customerName);
+
+    setForm((prev) => ({
+      ...prev,
+      customerName,
+      customerPhone: existingCustomer && !prev.customerPhone.trim()
+        ? existingCustomer.phone
+        : prev.customerPhone,
+    }));
+  };
+
+  const handleCustomerPhoneChange = (e) => {
+    const customerPhone = e.target.value;
+    const existingCustomer = findSavedCustomerByPhone(customerPhone);
+
+    setForm((prev) => ({
+      ...prev,
+      customerPhone,
+      customerName: existingCustomer && !prev.customerName.trim()
+        ? existingCustomer.name
+        : prev.customerName,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -134,6 +247,7 @@ export default function SalesPage() {
         toast.success('Sale recorded successfully!');
       }
 
+      saveCustomerLocally(form.customerName, form.customerPhone);
       setForm(EMPTY_FORM);
       setItemForm(EMPTY_ITEM);
       setCartItems([]);
@@ -339,9 +453,10 @@ export default function SalesPage() {
                 <label className="form-label">Customer Name *</label>
                 <input
                   className="form-control"
+                  list="savedCustomerNames"
                   placeholder="Enter customer name"
                   value={form.customerName}
-                  onChange={(e) => setForm({ ...form, customerName: e.target.value })}
+                  onChange={handleCustomerNameChange}
                   required
                 />
               </div>
@@ -349,12 +464,42 @@ export default function SalesPage() {
                 <label className="form-label">Customer Phone Number *</label>
                 <input
                   className="form-control"
+                  list="savedCustomerPhones"
                   placeholder="e.g. 078xxxxxxx"
                   value={form.customerPhone}
-                  onChange={(e) => setForm({ ...form, customerPhone: e.target.value })}
+                  onChange={handleCustomerPhoneChange}
                   required
                 />
               </div>
+            </div>
+
+            <datalist id="savedCustomerNames">
+              {savedCustomers.map((customer, index) => (
+                <option key={`saved-customer-name-${index}`} value={customer.name}>
+                  {customer.phone}
+                </option>
+              ))}
+            </datalist>
+            <datalist id="savedCustomerPhones">
+              {savedCustomers.map((customer, index) => (
+                <option key={`saved-customer-phone-${index}`} value={customer.phone}>
+                  {customer.name}
+                </option>
+              ))}
+            </datalist>
+
+            <div className="form-group" style={{ marginTop: -4 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={autoSaveCustomer}
+                  onChange={(e) => setAutoSaveCustomer(e.target.checked)}
+                />
+                Auto-save customer after sale
+              </label>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                Saved customers: {savedCustomers.length}
+              </p>
             </div>
 
             <div className="form-group">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
+import { Search } from 'lucide-react';
 import { productsAPI } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
@@ -124,9 +125,11 @@ export default function ProductsPage() {
       </div>
 
       <div className="topbar">
-        <div className="search-bar" style={{ flex: 1, maxWidth: 340 }}>
-          <span className="search-icon">Search</span>
-          <input className="form-control" placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="search-bar" style={{ flex: 1, maxWidth: 280 }}>
+          <span className="search-icon" aria-hidden="true">
+            <Search size={16} strokeWidth={2} />
+          </span>
+          <input className="form-control" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {canManageInventoryPage && <button className="btn btn-primary" onClick={openAdd}>Add Product</button>}
       </div>

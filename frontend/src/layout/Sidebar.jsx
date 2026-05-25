@@ -4,6 +4,7 @@ import {
   Clock3,
   LayoutDashboard,
   LogOut,
+  Monitor,
   Moon,
   Package,
   ReceiptText,
@@ -29,7 +30,7 @@ const navItems = [
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themeMode, cycleThemeMode } = useTheme();
   const navigate = useNavigate();
 
   const userPermissions = user?.permissions || {};
@@ -65,40 +66,48 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           </div>
         </div>
 
-        <nav style={{ flex: 1 }}>
-          {sections.map((section) => (
-            <div key={section}>
-              <div className="nav-section">{section}</div>
-              {visibleItems.filter((item) => item.section === section).map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/'}
-                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                    onClick={onClose}
-                  >
-                    <span className="nav-icon" aria-hidden="true">
-                      <Icon size={18} strokeWidth={2} />
-                    </span>
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
-            </div>
-          ))}
-          <div>
+        <nav className="sidebar-nav">
+          <div className="sidebar-nav-scroll">
+            {sections.map((section) => (
+              <div key={section}>
+                <div className="nav-section">{section}</div>
+                {visibleItems.filter((item) => item.section === section).map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === '/'}
+                      className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                      onClick={onClose}
+                    >
+                      <span className="nav-icon" aria-hidden="true">
+                        <Icon size={18} strokeWidth={2} />
+                      </span>
+                      <span>{item.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="sidebar-account">
             <div className="nav-section">ACCOUNT</div>
             <button
               className="nav-item"
-              onClick={toggleTheme}
+              onClick={cycleThemeMode}
               style={{ width: '100%', background: 'transparent' }}
             >
               <span className="nav-icon" aria-hidden="true">
-                {theme === 'dark' ? <Moon size={18} strokeWidth={2} /> : <SunMedium size={18} strokeWidth={2} />}
+                {themeMode === 'system'
+                  ? <Monitor size={18} strokeWidth={2} />
+                  : theme === 'dark'
+                    ? <Moon size={18} strokeWidth={2} />
+                    : <SunMedium size={18} strokeWidth={2} />}
               </span>
-              <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+              <span>
+                {themeMode === 'system' ? `Auto Theme (${theme})` : theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+              </span>
             </button>
             <button
               className="nav-item"

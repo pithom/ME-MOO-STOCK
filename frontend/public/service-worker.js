@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'memoo-static-v1';
-const API_CACHE = 'memoo-api-v1';
+const STATIC_CACHE = 'memoo-static-v2';
+const API_CACHE = 'memoo-api-v2';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -34,6 +34,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirstStatic(request));
+    return;
+  }
+
   event.respondWith(cacheFirstStatic(request));
 });
 
@@ -60,4 +65,17 @@ async function cacheFirstStatic(request) {
   const cache = await caches.open(STATIC_CACHE);
   cache.put(request, response.clone());
   return response;
+}
+
+async function networkFirstStatic(request) {
+  try {
+    const fresh = await fetch(request);
+    const cache = await caches.open(STATIC_CACHE);
+    cache.put(request, fresh.clone());
+    return fresh;
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    throw new Error('Offline and no cached app shell');
+  }
 }
